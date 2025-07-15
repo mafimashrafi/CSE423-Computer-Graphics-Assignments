@@ -7,22 +7,24 @@ import random
 window_width, window_height = 500, 500
 R, G, B = 0.0, 0.0, 0.0
 target_R, target_G, target_B = 0.0, 0.0, 0.0 
-color_step = 0.00001 
+color_step = 0.01 
 raindrops = []
+diagonal_value_shift = 0
 
 class Rain:
-    def __init__ (self, x, y):
+    def __init__ (self, x, y, x1=0):
         self.x = x
         self.y = y
         self.x1 = x
         self.speed = 0.5
 
     def convert_coordinate(self, left_x ):
-        self.x1 = self.x + left_x
+        self.x1 = self.x + 10
+        return self.x1
 
 
-    def draw_raindrop(self, R, G, B):
-        rain_drop_length = [30, 40, 50, 20]
+    def draw_raindrop(self, R, G, B, diagonal):
+        rain_drop_length = [30, 25, 20]
         length = random.choice(rain_drop_length)
 
         if self.x1 > 0 and self.x1 < window_width:
@@ -31,7 +33,7 @@ class Rain:
             glBegin(GL_LINES)
             glColor3f(R, G, B)
             glVertex2f(self.x, self.y)
-            glVertex2f(self.x1, self.y -length)
+            glVertex2f(self.x1+diagonal, self.y -length)
             glEnd()
 
     def animate(self):
@@ -179,7 +181,7 @@ def display():
     House_Door().draw_knob()
     House_Roof().draw()
 
-    for i in range(1000):
+    for i in range(200):
         rain_x = random.randint(0, window_width)
         rain_y = random.randint(0, window_height)
         rain = Rain(rain_x, rain_y)
@@ -187,37 +189,36 @@ def display():
         rain_R = random.random()
         rain_G = random.random()
         rain_B = random.random()
-        rain.draw_raindrop(rain_R, rain_G, rain_B)
+        rain.draw_raindrop(rain_R, rain_G, rain_B, diagonal_value_shift)
         raindrops.append(rain)
     
     glutSwapBuffers()
 
 def mouse_Listener(button, state, x, y):
-    global R, G, B 
+    global R, G, B , target_R, target_G, target_B
     if button == GLUT_LEFT_BUTTON:
         if state == GLUT_DOWN:
-            R = 1.0
-            G = 1.0
-            B = 1.0
+            target_R = 1.0
+            target_G = 1.0
+            target_B = 1.0
     elif button == GLUT_RIGHT_BUTTON:
         if state == GLUT_DOWN:
-            R = 0.114
-            G = 0.67
-            B = 0.988
+            target_R = 0.114
+            target_G = 0.67
+            target_B = 0.988
     else:
-        R = 0.0
-        G = 0.0
-        B = 0.0
+        target_R = 0.0
+        target_G = 0.0
+        target_B = 0.0
 
 def specialkey_listener(key, x, y):
-    global raindrops
+    global raindrops, diagonal_value_shift
     if key == GLUT_KEY_LEFT:
-        for rain in raindrops:
-            rain.convert_coordinate(15)
-        print(1)
+        diagonal_value_shift = 20
     elif key == GLUT_KEY_RIGHT:
-        for rain in raindrops:
-            rain.convert_coordinate(-15)
+        diagonal_value_shift = -20
+    else: 
+        diagonal_value_shift = 0
     glutPostRedisplay()
 
 def init(R, G, B):
