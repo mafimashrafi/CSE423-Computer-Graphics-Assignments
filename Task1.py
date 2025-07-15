@@ -1,10 +1,48 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *  
 from OpenGL.GLU import * 
-import time as time
+import random 
+
 
 window_width, window_height = 500, 500
 R, G, B = 0.0, 0.0, 0.0
+target_R, target_G, target_B = 0.0, 0.0, 0.0 
+color_step = 0.00001 
+raindrops = []
+
+class Rain:
+    def __init__ (self, x, y):
+        self.x = x
+        self.y = y
+        self.x1 = x
+        self.speed = 0.5
+
+    def convert_coordinate(self, left_x ):
+        self.x1 = self.x + left_x
+
+
+    def draw_raindrop(self, R, G, B):
+        rain_drop_length = [30, 40, 50, 20]
+        length = random.choice(rain_drop_length)
+
+        if self.x1 > 0 and self.x1 < window_width:
+
+            glPointSize(5)
+            glBegin(GL_LINES)
+            glColor3f(R, G, B)
+            glVertex2f(self.x, self.y)
+            glVertex2f(self.x1, self.y -length)
+            glEnd()
+
+    def animate(self):
+        self.x += self.speed
+        self.y -= self.speed
+        if self.y < 0 and self.x > window_width:
+            self.y = window_height
+            self.x = random.randint(0, window_width)
+        self.x1 = self.x
+        glutPostRedisplay()
+
 
 class House_Roof:
     def draw(self):
@@ -117,6 +155,7 @@ class FrontBackground:
         glEnd()
 
 def display():
+    global raindrops
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glMatrixMode(GL_MODELVIEW)
@@ -140,6 +179,17 @@ def display():
     House_Door().draw_knob()
     House_Roof().draw()
 
+    for i in range(1000):
+        rain_x = random.randint(0, window_width)
+        rain_y = random.randint(0, window_height)
+        rain = Rain(rain_x, rain_y)
+
+        rain_R = random.random()
+        rain_G = random.random()
+        rain_B = random.random()
+        rain.draw_raindrop(rain_R, rain_G, rain_B)
+        raindrops.append(rain)
+    
     glutSwapBuffers()
 
 def mouse_Listener(button, state, x, y):
@@ -149,15 +199,26 @@ def mouse_Listener(button, state, x, y):
             R = 1.0
             G = 1.0
             B = 1.0
-            init(R, G, B)
-            glutPostRedisplay()
     elif button == GLUT_RIGHT_BUTTON:
         if state == GLUT_DOWN:
             R = 0.114
             G = 0.67
             B = 0.988
-            init(R, G, B)
-            glutPostRedisplay()
+    else:
+        R = 0.0
+        G = 0.0
+        B = 0.0
+
+def specialkey_listener(key, x, y):
+    global raindrops
+    if key == GLUT_KEY_LEFT:
+        for rain in raindrops:
+            rain.convert_coordinate(15)
+        print(1)
+    elif key == GLUT_KEY_RIGHT:
+        for rain in raindrops:
+            rain.convert_coordinate(-15)
+    glutPostRedisplay()
 
 def init(R, G, B):
     glClearColor(R, G, B, 1.0)
@@ -166,6 +227,26 @@ def init(R, G, B):
     gluOrtho2D(0, window_width, 0, window_height)
     glMatrixMode(GL_MODELVIEW)
     gluPerspective(104, 1, 1, 1000.0)
+
+def animate():
+    global R, G, B, target_R, target_G, target_B, color_step, raindrops
+
+    if R < target_R:
+        R = min(R + color_step, target_R)
+    elif R > target_R:
+        R = max(R - color_step, target_R)
+    if G < target_G:
+        G = min(G + color_step, target_G)
+    elif G > target_G:
+        G = max(G - color_step, target_G)
+    if B < target_B:
+        B = min(B + color_step, target_B)
+    elif B > target_B:
+        B = max(B - color_step, target_B)
+    init(R, G, B)
+    for rain in raindrops:
+        rain.animate()
+    glutPostRedisplay()
 
 glutInit()
 glutInitWindowSize(window_width, window_height)
@@ -176,6 +257,9 @@ window = glutCreateWindow(b"Task1 Rain Animation")
 init(R, G, B)
 
 glutDisplayFunc(display)
+
 glutMouseFunc(mouse_Listener)
+glutSpecialFunc(specialkey_listener)
+glutIdleFunc(animate)
 
 glutMainLoop()
