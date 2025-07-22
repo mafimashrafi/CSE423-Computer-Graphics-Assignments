@@ -12,7 +12,8 @@ coordinates = []
 R, G, B = random.random(), random.random(), random.random()
 coordinates.append([vertex_x, vertex_y, direction[0], direction[1], (R, G, B)])
 pause = True
-
+dot_visibility = True
+blinking = False
 
 class createDot:
     def draw(self, vertex_x, vertex_y, color):
@@ -25,20 +26,40 @@ class createDot:
 
 
 def display():
-    global w_width, w_height, vertex_x, vertex_y, coordinates
+    global coordinates, dot_visibility
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
     glMatrixMode(GL_MODELVIEW)
 
-    for x, y, _, _, color in coordinates:
-        createDot().draw(x, y, color)
+    if dot_visibility:
+        for x, y, _, _, color in coordinates:
+            createDot().draw(x, y, color)
 
     glutSwapBuffers()
 
+def restore_visibility(arg):
+    global dot_visibility
+    dot_visibility = True
+
+    glutPostRedisplay()
+
+def blinker(value):
+    global dot_visibility, blinking
+    
+    if blinking:
+            dot_visibility = not dot_visibility
+            glutTimerFunc(500, blinker, 0)    
+    else:
+        dot_visibility =True
+
+
+    glutPostRedisplay()    
+
+
 def mouse_listener(button, state, x, y):
-    global w_width, w_height, coordinates, directions
+    global w_width, w_height, coordinates, directions, dot_visibility, blinking
     if button == GLUT_RIGHT_BUTTON:
         if state == GLUT_DOWN:
             vertex_x = random.randint(0, w_width)
@@ -46,7 +67,16 @@ def mouse_listener(button, state, x, y):
             direction = random.choice(directions)
             R, G, B = random.random(), random.random(), random.random()
             coordinates.append([vertex_x, vertex_y, direction[0], direction[1], (R, G, B)]) 
-            glutPostRedisplay()
+
+    if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
+        blinking = not blinking
+        if blinking:
+            glutTimerFunc(0, blinker, 0)
+        else:
+            dot_visibility = True
+
+
+    glutPostRedisplay()
 
 def specialkey_listener(key, x, y):
     global speed
@@ -60,7 +90,7 @@ def specialkey_listener(key, x, y):
     glutPostRedisplay()
 
 def normal_key_listener(key, x, y):
-    global pause
+    global pause, BR, BG, BB
     if key == b' ':
         pause = not pause
 
