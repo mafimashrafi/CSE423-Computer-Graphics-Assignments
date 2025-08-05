@@ -43,10 +43,10 @@ class mid_point_line_drawing:
         if zone == 1:
             self.x1, self.y1 = self.y1, self.x1
             self.x2, self.y2 = self.y2, self.x2
-        elif zone == 2 and zone == 7: 
+        elif zone == 2: 
             self.x1, self.y1 = self.y1, (self.x1)*(-1)
             self.x2, self.y2 = self.y2, self.x2*(-1)
-        elif zone == 3 or zone == 6: 
+        elif zone == 3: 
             self.x1, self.y1 = self.x1*(-1), self.y1
             self.x2, self.y2 = self.x2*(-1), self.y2
         elif zone == 4:
@@ -55,31 +55,84 @@ class mid_point_line_drawing:
         elif zone == 5:
             self.x1, self.y1 = self.y1*(-1), self.x1*(-1)
             self.x2, self.y2 = self.y2*(-1), self.x2*(-1)
+        elif zone == 6:
+            self.x1, self.y1 = self.y1*(-1), self.x1
+            self.x2, self.y2 = self.y2*(-1), self.x2
+        elif zone == 7:
+            self.x1, self.y1 = self.x1, self.y1*(-1)
+            self.x2, self.y2 = self.x2, self.y2*(-1)
     
     def revrese_zone_shift(self, x1, y1, zone):
         if zone == 1:
             x1, y1 = y1, x1
-        elif zone == 2 and zone == 7: 
-            x1, y1 = y1, (x1)*(-1)
-        elif zone == 3 or zone == 6: 
+        elif zone == 2: 
+            x1, y1 = y1*(-1), (x1)
+        elif zone == 3: 
             x1, y1 = x1*(-1), y1
         elif zone == 4:
             x1, y1 = x1*(-1), y1*(-1)
         elif zone == 5:
             x1, y1 = y1*(-1), x1*(-1)
+        elif zone == 6:
+            x1, y1 = y1, x1*(-1)
+        elif zone == 7:
+            x1, y1 = x1, y1*(-1)
 
-    def line_drawing(self):
+        return (x1, y1)
+
+    def finding_pixels(self):
         pixel_list = []
 
         zone = self.find_zone()
         self.zone_shifter(zone)
+        x1, y1 = self.revrese_zone_shift(self.x1, self.y1, zone)
+        pixel_list.append((x1, y1))
         
         dx = self.x2 - self.x1
         dy = self.y2 - self.y1
 
-        d = 2*dy - dx
-        
-  
+        d = 2*abs(dy) - abs(dx)
+
+        num_iteration = max(abs(dx), abs(dy))
+
+        for i in range(num_iteration+1):
+            if d < 0:
+                if abs(dx) == dx:
+                    self.x1+=1
+                elif abs(dx) != dx:
+                    self.x1-=1
+                
+                d = d + (2*dy)
+            
+            else:
+                if abs(dx) == dx and abs(dy) == dy:
+                    self.x1+=1
+                    self.y1+=1
+                elif abs(dx) != dx and abs(dy) != dy:
+                    self.x1-=1
+                    self.y1-=1
+                elif abs(dx) != dx and abs(dy) == dy:
+                    self.x1-=1
+                    self.y1+=1
+                else:
+                    self.x1+=1
+                    self.y1-=1
+
+                d = d + 2*(dy - dx)
+
+            x1, y1 = self.revrese_zone_shift(self.x1, self.y1, zone)
+            pixel_list.append((x1, y1))
+
+        return pixel_list
+    
+class drawing_line:
+
+    def draw_points(self, x, y):
+        glPointSize(5) 
+        glColor3f(0.5, 0.5, 0.5)
+        glBegin(GL_POINTS)
+        glVertex2f(x+250, y+250)
+        glEnd()
 
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -88,7 +141,13 @@ def display():
     glMatrixMode(GL_MODELVIEW)
 
     mpl_algorithm = mid_point_line_drawing(-2, 4, -3, -5)
-    mpl_algorithm.line_drawing()
+    pixel_list = mpl_algorithm.finding_pixels()
+
+    lets_draw_line = drawing_line()
+    for i in pixel_list:
+        x, y = i
+        lets_draw_line.draw_points(x, y)
+
 
     glutSwapBuffers()
 
@@ -100,6 +159,7 @@ def init():
     glLoadIdentity()
     gluOrtho2D(0, window_width, 0, window_height)
     glMatrixMode(GL_MODELVIEW)
+    gluPerspective(104, 1, 1, 1000.0)
 
 
 glutInit()
