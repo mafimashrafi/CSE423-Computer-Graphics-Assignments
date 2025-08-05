@@ -3,7 +3,6 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import random
 import time
-import sys
 
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
@@ -15,8 +14,8 @@ score = 0
 # Delta timing
 last_time = time.time()
 
-# Midpoint line drawing algorithm class
-class MidpointLine:
+# Midpoint line draw_lineing algorithm class
+class mid_point_line_algo:
     def __init__(self, x1, y1, x2, y2):
         self.x1, self.y1 = x1, y1
         self.x2, self.y2 = x2, y2
@@ -43,30 +42,46 @@ class MidpointLine:
             else:
                 return 6
 
-    def to_zone_0(self, x, y, zone):
-        if zone == 0: return x, y
-        elif zone == 1: return y, x
-        elif zone == 2: return y, -x
-        elif zone == 3: return -x, y
-        elif zone == 4: return -x, -y
-        elif zone == 5: return -y, -x
-        elif zone == 6: return -y, x
-        elif zone == 7: return x, -y
+    def zone_shiftin(self, x, y, zone):
+        if zone == 0: 
+            return x, y
+        elif zone == 1: 
+            return y, x
+        elif zone == 2: 
+            return y, -x
+        elif zone == 3: 
+            return -x, y
+        elif zone == 4: 
+            return -x, -y
+        elif zone == 5: 
+            return -y, -x
+        elif zone == 6: 
+            return -y, x
+        elif zone == 7: 
+            return x, -y
 
-    def from_zone_0(self, x, y, zone):
-        if zone == 0: return x, y
-        elif zone == 1: return y, x
-        elif zone == 2: return -y, x
-        elif zone == 3: return -x, y
-        elif zone == 4: return -x, -y
-        elif zone == 5: return -y, -x
-        elif zone == 6: return y, -x
-        elif zone == 7: return x, -y
+    def reverse_zone_shift(self, x, y, zone):
+        if zone == 0: 
+            return x, y
+        elif zone == 1: 
+            return y, x
+        elif zone == 2: 
+            return -y, x
+        elif zone == 3: 
+            return -x, y
+        elif zone == 4: 
+            return -x, -y
+        elif zone == 5: 
+            return -y, -x
+        elif zone == 6: 
+            return y, -x
+        elif zone == 7: 
+            return x, -y
 
-    def draw(self):
+    def draw_line(self):
         zone = self.find_zone(self.x1, self.y1, self.x2, self.y2)
-        x1, y1 = self.to_zone_0(self.x1, self.y1, zone)
-        x2, y2 = self.to_zone_0(self.x2, self.y2, zone)
+        x1, y1 = self.zone_shiftin(self.x1, self.y1, zone)
+        x2, y2 = self.zone_shiftin(self.x2, self.y2, zone)
 
         dx = x2 - x1
         dy = y2 - y1
@@ -77,7 +92,7 @@ class MidpointLine:
 
         x, y = x1, y1
         while x <= x2:
-            px, py = self.from_zone_0(x, y, zone)
+            px, py = self.reverse_zone_shift(x, y, zone)
             glBegin(GL_POINTS)
             glVertex2f(px, py)
             glEnd()
@@ -99,7 +114,7 @@ class Diamond:
         self.color = [random.random(), random.random(), random.random()]
         self.speed = 100
 
-    def draw(self):
+    def draw_line(self):
         glColor3f(*self.color)
         mid = [self.x, self.y]
         right = [self.x + self.size, self.y - self.size]
@@ -107,10 +122,22 @@ class Diamond:
         left = [self.x - self.size, self.y - self.size]
 
         for (a, b) in [(mid, right), (right, bottom), (bottom, left), (left, mid)]:
-            MidpointLine(a[0], a[1], b[0], b[1]).draw()
+            mid_point_line_algo(a[0], a[1], b[0], b[1]).draw_line()
 
-    def update(self, dt):
+    def animation(self, dt):
         self.y -= self.speed * dt
+
+        if check_collision(self.get_aabb(), catcher.get_aabb()):
+            global score
+            score += 1
+            print("Score:", score)
+            self.speed = min(self.speed + 20, 800)  # Speed up
+            self.reset()
+        elif self.y < -WINDOW_HEIGHT//2:
+            global game_over
+            print("Game Over. Final Score:", score)
+            game_over = True
+            catcher.color = [1, 0, 0]
 
     def get_aabb(self):
         return (self.x - self.size, self.y - 2 * self.size, self.size * 2, self.size * 2)
@@ -124,7 +151,7 @@ class Catcher:
         self.color = [1, 1, 1]
         self.speed = 300
 
-    def draw(self):
+    def draw_line(self):
         glColor3f(*self.color)
         top_left = [self.x - self.width//2, self.y + self.height//2]
         top_right = [self.x + self.width//2, self.y + self.height//2]
@@ -133,7 +160,7 @@ class Catcher:
 
         for (a, b) in [(top_left, top_right), (top_right, bottom_right),
                       (bottom_right, bottom_left), (bottom_left, top_left)]:
-            MidpointLine(a[0], a[1], b[0], b[1]).draw()
+            mid_point_line_algo(a[0], a[1], b[0], b[1]).draw_line()
 
     def get_aabb(self):
         return (self.x - self.width//2, self.y - self.height//2, self.width, self.height)
@@ -160,7 +187,7 @@ def check_collision(aabb1, aabb2):
     )
 
 def update():
-    global last_time, score, game_over
+    global last_time
     current_time = time.time()
     dt = current_time - last_time
     last_time = current_time
@@ -169,23 +196,14 @@ def update():
         glutPostRedisplay()
         return
 
-    diamond.update(dt)
-
-    if check_collision(diamond.get_aabb(), catcher.get_aabb()):
-        score += 1
-        print("Score:", score)
-        diamond.reset()
-    elif diamond.y < -WINDOW_HEIGHT//2:
-        print("Game Over. Final Score:", score)
-        game_over = True
-        catcher.color = [1, 0, 0]
+    diamond.animation(dt)  # Now animation handles fall + collision + scoring
 
     glutPostRedisplay()
 
 def display():
     glClear(GL_COLOR_BUFFER_BIT)
-    diamond.draw()
-    catcher.draw()
+    diamond.draw_line()
+    catcher.draw_line()
     glutSwapBuffers()
 
 def keyboard(key, x, y):
@@ -221,7 +239,7 @@ def mouse(button, state, x, y):
             glutLeaveMainLoop()
 
 def init():
-    glClearColor(0, 0, 0, 1)
+    glClearColor(44/256, 45/256, 60/256, 1)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluOrtho2D(-WINDOW_WIDTH//2, WINDOW_WIDTH//2, -WINDOW_HEIGHT//2, WINDOW_HEIGHT//2)
