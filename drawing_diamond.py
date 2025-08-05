@@ -5,12 +5,8 @@ import random
 import math
 
 window_width, window_height = 500, 500
-dmd_common_x = random.randrange(-window_width//2 + 50, window_width//2-31)
-dmd_common_y = 230
-x2 = dmd_common_x - 25
-x3 = dmd_common_x + 25
-y2 = dmd_common_y - 25
-y3 = dmd_common_y - 50
+top_x = random.randint( int(-window_width/2 + 100) , int(window_width/2 - 100) )
+top_y = 230
 
 class mid_point_line_drawing:
 
@@ -26,26 +22,41 @@ class mid_point_line_drawing:
         dx = self.x2 - self.x1
         dy = self.y2 - self.y1
 
+        if dx == 0 and dy == 0:
+            return 0
+        
+        if dx == 0 :
+            if dy > 0:
+                return 1
+            else:
+                return 6
+            
+        if dy == 0:
+            if dx > 0:
+                return 0
+            else:
+                return 3
+
         if abs(dx) == dx and abs(dy) == dy:
             if dx < dy:
-                zone = 1
+                return 1
+            else:
+                return 0
         elif abs(dx) != dx and abs(dy) == dy:
             if dx > dy:
-                zone = 3
+                return 3
             else:
-                zone = 2
+                return 2
         elif abs(dx) != dx and abs(dy) != dy:
             if dx > dy:
-                zone = 4
+                return 4
             else:
-                zone = 5
+                return 5
         else:
             if dy > dx:
-                zone = 6
+                return 6
             else:
-                zone = 7
-
-        return zone
+                return 7
 
     def zone_shifter(self, zone):
         if zone == 1:
@@ -90,6 +101,9 @@ class mid_point_line_drawing:
 
     def finding_pixels(self):
         pixel_list = []
+
+        if self.x1 == self.x2 and self.y1 == self.y2:
+            return [(self.x1, self.y1)]
 
         zone = self.find_zone()
         self.zone_shifter(zone)
@@ -154,51 +168,25 @@ class drawing_line:
         
             self.draw_points(x, y)
 
-# class diamond:
-
-#     def draw_square(self):
-#         global dmd_common_x, dmd_common_y
-
-#         mpl_algorithm = mid_point_line_drawing(-2, 4, -3, -5)
-#         pixel_list = mpl_algorithm.finding_pixels()
-
-#         lets_draw_line = drawing_line()
-#         for i in pixel_list:
-#             x, y = i
-#             lets_draw_line.draw_points(x, y)
-
-#         glutSwapBuffers()
 
 def display():
-    global dmd_common_x, dmd_common_y
+    global top_x, top_y
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
     glMatrixMode(GL_MODELVIEW)
 
-    mpl_algorithm = mid_point_line_drawing(dmd_common_x - 50, dmd_common_y - 50, dmd_common_x, dmd_common_y)
+    offset = 100
+    top_corner = (top_x, top_y)
+    right_corner = (top_x + offset / 2, top_y - offset)
+    left_corner = (top_x - offset, top_y - offset)
+    bottom_corner = (top_x, top_y - 2*offset)
+
+    mpl_algorithm = mid_point_line_drawing(0, 230, 0, 0)
     pixel_list = mpl_algorithm.finding_pixels()
     lets_draw_line = drawing_line(pixel_list)
     lets_draw_line.draw_line()
-
-    # pixel_list = pixel_list.clear()
-    # mpl_algorithm = mid_point_line_drawing(dmd_common_x, dmd_common_y + 1, dmd_common_x + 30, dmd_common_y + 1)
-    # pixel_list = mpl_algorithm.finding_pixels()
-    # lets_draw_line = drawing_line(pixel_list)
-    # lets_draw_line.draw_line()
-
-    # pixel_list = pixel_list.clear()
-    # mpl_algorithm = mid_point_line_drawing(dmd_common_x, dmd_common_y - 30, dmd_common_x, dmd_common_y)
-    # pixel_list = mpl_algorithm.finding_pixels()
-    # lets_draw_line = drawing_line(pixel_list)
-    # lets_draw_line.draw_line()
-
-    # pixel_list = pixel_list.clear()
-    # mpl_algorithm = mid_point_line_drawing(dmd_common_x + 31, dmd_common_y - 30, dmd_common_x + 31, dmd_common_y)
-    # pixel_list = mpl_algorithm.finding_pixels()
-    # lets_draw_line = drawing_line(pixel_list)
-    # lets_draw_line.draw_line()
 
     glutSwapBuffers()
 
@@ -208,7 +196,7 @@ def init():
     glColor3f(1, 1, 1)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluOrtho2D(-window_width/2, window_width/2, -window_height/2, window_height/2)
+    gluOrtho2D(-250, 250, -250, 250)
     glMatrixMode(GL_MODELVIEW)
     gluPerspective(104, 1, 1, 1000.0)
 
