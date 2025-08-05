@@ -1,8 +1,16 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *  
 from OpenGL.GLU import * 
+import random
+import math
 
 window_width, window_height = 500, 500
+dmd_common_x = random.randrange(-window_width//2 + 50, window_width//2-31)
+dmd_common_y = 230
+x2 = dmd_common_x - 25
+x3 = dmd_common_x + 25
+y2 = dmd_common_y - 25
+y3 = dmd_common_y - 50
 
 class mid_point_line_drawing:
 
@@ -127,6 +135,9 @@ class mid_point_line_drawing:
     
 class drawing_line:
 
+    def __init__(self, pixel_list):
+        self.pixels = pixel_list
+
     def draw_points(self, x, y):
         glPointSize(5) 
         glColor3f(0.5, 0.5, 0.5)
@@ -134,20 +145,60 @@ class drawing_line:
         glVertex2f(x, y)
         glEnd()
 
+    def draw_line(self):
+        for i in self.pixels:
+            x, y = i
+
+            x = int(x*math.cos(45) - y*math.sin(45))
+            y = int(x*math.sin(45) + y*math.cos(45))
+        
+            self.draw_points(x, y)
+
+# class diamond:
+
+#     def draw_square(self):
+#         global dmd_common_x, dmd_common_y
+
+#         mpl_algorithm = mid_point_line_drawing(-2, 4, -3, -5)
+#         pixel_list = mpl_algorithm.finding_pixels()
+
+#         lets_draw_line = drawing_line()
+#         for i in pixel_list:
+#             x, y = i
+#             lets_draw_line.draw_points(x, y)
+
+#         glutSwapBuffers()
+
 def display():
+    global dmd_common_x, dmd_common_y
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
     glMatrixMode(GL_MODELVIEW)
 
-    mpl_algorithm = mid_point_line_drawing(-2, 4, -3, -5)
+    mpl_algorithm = mid_point_line_drawing(dmd_common_x - 50, dmd_common_y - 50, dmd_common_x, dmd_common_y)
     pixel_list = mpl_algorithm.finding_pixels()
+    lets_draw_line = drawing_line(pixel_list)
+    lets_draw_line.draw_line()
 
-    lets_draw_line = drawing_line()
-    for i in pixel_list:
-        x, y = i
-        lets_draw_line.draw_points(x, y)
+    # pixel_list = pixel_list.clear()
+    # mpl_algorithm = mid_point_line_drawing(dmd_common_x, dmd_common_y + 1, dmd_common_x + 30, dmd_common_y + 1)
+    # pixel_list = mpl_algorithm.finding_pixels()
+    # lets_draw_line = drawing_line(pixel_list)
+    # lets_draw_line.draw_line()
 
+    # pixel_list = pixel_list.clear()
+    # mpl_algorithm = mid_point_line_drawing(dmd_common_x, dmd_common_y - 30, dmd_common_x, dmd_common_y)
+    # pixel_list = mpl_algorithm.finding_pixels()
+    # lets_draw_line = drawing_line(pixel_list)
+    # lets_draw_line.draw_line()
+
+    # pixel_list = pixel_list.clear()
+    # mpl_algorithm = mid_point_line_drawing(dmd_common_x + 31, dmd_common_y - 30, dmd_common_x + 31, dmd_common_y)
+    # pixel_list = mpl_algorithm.finding_pixels()
+    # lets_draw_line = drawing_line(pixel_list)
+    # lets_draw_line.draw_line()
 
     glutSwapBuffers()
 
