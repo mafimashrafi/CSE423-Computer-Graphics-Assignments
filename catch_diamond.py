@@ -11,10 +11,8 @@ game_over = False
 paused = False
 score = 0
 
-# Delta timing
 last_time = time.time()
 
-# Midpoint line draw_lineing algorithm class
 class mid_point_line_algo:
     def __init__(self, x1, y1, x2, y2):
         self.x1, self.y1 = x1, y1
@@ -131,7 +129,7 @@ class Diamond:
             global score
             score += 1
             print("Score:", score)
-            self.speed = min(self.speed + 20, 800)  # Speed up
+            self.speed = min(self.speed + 20, 800) 
             self.reset()
         elif self.y < -WINDOW_HEIGHT//2:
             global game_over
@@ -153,23 +151,24 @@ class Catcher:
 
     def draw_line(self):
         glColor3f(*self.color)
+        top_left = [self.x - self.width//2, self.y + self.height//2]
+        top_right = [self.x + self.width//2, self.y + self.height//2]
+        bottom_right = [self.x + self.width//2, self.y - self.height//2]
+        bottom_left = [self.x - self.width//2, self.y - self.height//2]
 
-        top_half = self.width // 2
-        bottom_half = self.width // 4  # Narrower bottom
-
-        # Trapezoid corners
-        top_left = [self.x - top_half, self.y + self.height // 2]
-        top_right = [self.x + top_half, self.y + self.height // 2]
-        bottom_right = [self.x + bottom_half, self.y - self.height // 2]
-        bottom_left = [self.x - bottom_half, self.y - self.height // 2]
-
-        for a, b in [
-            (top_left, top_right),
-            (top_right, bottom_right),
-            (bottom_right, bottom_left),
-            (bottom_left, top_left)
-        ]:
+        for (a, b) in [(top_left, top_right), (top_right, bottom_right),
+                      (bottom_right, bottom_left), (bottom_left, top_left)]:
             mid_point_line_algo(a[0], a[1], b[0], b[1]).draw_line()
+
+    def get_aabb(self):
+        return (self.x - self.width//2, self.y - self.height//2, self.width, self.height)
+
+    def move(self, direction, dt):
+        if direction == "left":
+            self.x -= self.speed * dt
+        elif direction == "right":
+            self.x += self.speed * dt
+        self.x = max(-WINDOW_WIDTH//2 + self.width//2, min(WINDOW_WIDTH//2 - self.width//2, self.x))
 
 class Button:
     def __init__(self, x, y, size, label, color):
@@ -179,7 +178,7 @@ class Button:
         self.label = label
         self.color = color
 
-    def draw_triangle(self):  # for play or restart
+    def draw_triangle(self): 
         a = (self.x - self.size, self.y - self.size)
         b = (self.x + self.size, self.y)
         c = (self.x - self.size, self.y + self.size)
@@ -190,23 +189,19 @@ class Button:
     def draw_arrow(self):
         s = self.size
 
-        # Define arrowhead
         left = (self.x - s, self.y)
         top = (self.x, self.y + s)
         bottom = (self.x, self.y - s)
 
-        # Define arrow shaft
         tail_start = (self.x, self.y)
         tail_end = (self.x + s, self.y)
 
-        # Draw arrowhead < using two lines
         mid_point_line_algo(*left, *top).draw_line()
         mid_point_line_algo(*left, *bottom).draw_line()
 
-        # Draw shaft --
         mid_point_line_algo(*tail_start, *tail_end).draw_line()
 
-    def draw_pause(self):  # for pause
+    def draw_pause(self): 
         bar_width = self.size // 3
         spacing = bar_width // 2
         for offset in [-spacing, spacing]:
@@ -217,7 +212,7 @@ class Button:
             mid_point_line_algo(x1, y1, x1, y2).draw_line()
             mid_point_line_algo(x2, y1, x2, y2).draw_line()
 
-    def draw_cross(self):  # for exit
+    def draw_cross(self): 
         s = self.size
         mid_point_line_algo(self.x - s, self.y - s, self.x + s, self.y + s).draw_line()
         mid_point_line_algo(self.x - s, self.y + s, self.x + s, self.y - s).draw_line()
@@ -238,14 +233,11 @@ class Button:
         return abs(mx - self.x) <= self.size and abs(my - self.y) <= self.size
 
 
-# Game elements
 diamond = Diamond()
 catcher = Catcher()
 button_restart = Button(-WINDOW_WIDTH//2 + 50, WINDOW_HEIGHT//2 - 40, 15, 'restart', (0, 1, 1))
 button_playpause = Button(0, WINDOW_HEIGHT//2 - 40, 15, 'play_pause', (1, 0.75, 0))
 button_exit = Button(WINDOW_WIDTH//2 - 50, WINDOW_HEIGHT//2 - 40, 15, 'exit', (1, 0, 0))
-
-# Button stubs — for simplicity we omit full button rendering for now
 
 def check_collision(aabb1, aabb2):
     return (
@@ -265,7 +257,7 @@ def update():
         glutPostRedisplay()
         return
 
-    diamond.animation(dt)  # Now animation handles fall + collision + scoring
+    diamond.animation(dt)  
 
     glutPostRedisplay()
 
@@ -297,7 +289,6 @@ def special_input(key, x, y):
 def mouse(button, state, x, y):
     global game_over, paused, score
     if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
-        # Convert screen coords to OpenGL coords
         mx = x - WINDOW_WIDTH // 2
         my = (WINDOW_HEIGHT - y) - WINDOW_HEIGHT // 2
 
