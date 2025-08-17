@@ -3,8 +3,17 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 Grid_length = 60
-camera_pos = (0, 400, 600)  # camera placed diagonally above the grid
+camera_pos = (0, 400, 600) 
 fovY = 120
+
+def borders_of_grid():
+    glBegin(GL_QUADS)
+    glColor3f(0, 0, 0)
+    glVertex3f(0, 0, 0)
+    glVertex3f(10, 0, 0)
+    glVertex3f(10, 60, 0)
+    glVertex3f(0, 60, 0)
+    glEnd()
 
 def draw_tile(is_white=True):
     """Draw a single square tile on XY plane"""
@@ -42,16 +51,17 @@ def display():
     camera_setup()
 
     # Draw a big checkerboard grid
-    for i in range(-10, 10):
-        for j in range(-10, 10):
-            glPushMatrix()
-            glTranslatef(i * Grid_length, j * Grid_length, 0)
+    # for i in range(-10, 10):
+    #     for j in range(-10, 10):
+    #         glPushMatrix()
+    #         glTranslatef(i * Grid_length, j * Grid_length, 0)
 
-            # alternate color
-            is_white = (i + j) % 2 == 0
-            draw_tile(is_white)
+    #         # alternate color
+    #         is_white = (i + j) % 2 == 0
+    #         draw_tile(is_white)
 
-            glPopMatrix()
+    #         glPopMatrix()
+    borders_of_grid()   
 
     glutSwapBuffers()
 
