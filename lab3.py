@@ -8,11 +8,16 @@ fovY = 120
 
 def borders_of_grid():
     glBegin(GL_QUADS)
-    glColor3f(0, 0, 0)
-    glVertex3f(0, 0, 0)
-    glVertex3f(10, 0, 0)
-    glVertex3f(10, 60, 0)
-    glVertex3f(0, 60, 0)
+    glColor3f(1, 1, 1)
+    glVertex3f(-700, -600, 50)
+    glVertex3f(-600, -600, 50)
+    glVertex3f(-600, 600, 50)
+    glVertex3f(-700, 600, 50)
+
+    glVertex3f(-600, -600, 50)
+    glVertex3f(-600, -600, 50)
+    glVertex3f(-600, 600, 50)
+    glVertex3f(-600, 600, 50)
     glEnd()
 
 def draw_tile(is_white=True):
@@ -39,7 +44,6 @@ def camera_setup():
     glLoadIdentity()
 
     x, y, z = camera_pos
-    # Camera looks at origin, Z is up
     gluLookAt(x, y, z,
                0, 0, 0,
                0, 0, 1)
@@ -50,17 +54,16 @@ def display():
     glViewport(0, 0, 1000, 800)
     camera_setup()
 
-    # Draw a big checkerboard grid
-    # for i in range(-10, 10):
-    #     for j in range(-10, 10):
-    #         glPushMatrix()
-    #         glTranslatef(i * Grid_length, j * Grid_length, 0)
+    for i in range(-10, 10):
+        for j in range(-10, 10):
+            glPushMatrix()
+            glTranslatef(i * Grid_length, j * Grid_length, 0)
 
-    #         # alternate color
-    #         is_white = (i + j) % 2 == 0
-    #         draw_tile(is_white)
+            # alternate color
+            is_white = (i + j) % 2 == 0
+            draw_tile(is_white)
 
-    #         glPopMatrix()
+            glPopMatrix()
     borders_of_grid()   
 
     glutSwapBuffers()
