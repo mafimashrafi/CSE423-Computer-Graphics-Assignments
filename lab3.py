@@ -3,16 +3,16 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 Grid_length = 60
-camera_pos = (0, 400, 600) 
+camera_pos = (0, 400, 500) 
 fovY = 120
 
 def borders_of_grid():
     glBegin(GL_QUADS)
-    glColor3f(0, 0.3, 1)
-    glVertex3f(-700, -600, 50)
-    glVertex3f(-600, -600, 50)
-    glVertex3f(-600, 600, 50)
-    glVertex3f(-700, 600, 50)
+    # glColor3f(0, 0.3, 1)
+    # glVertex3f(-700, -600, 50)
+    # glVertex3f(-600, -600, 50)
+    # glVertex3f(-600, 600, 50)
+    # glVertex3f(-700, 600, 50)
 
     # glColor3f(1, 0, 0)
     # glVertex3f(-700, -600, 0)
@@ -32,6 +32,23 @@ def borders_of_grid():
     glVertex3f(-600, 600, 0)
     glVertex3f(-600, 600, 50)
 
+    glColor3f(1, 0, 0)
+    glVertex3f(-600, 600, 50)
+    glVertex3f(-600, 600, 0)
+    glVertex3f(600, 600, 0)    
+    glVertex3f(600, 600, 50)
+
+    glColor3f(0, 1, 0)
+    glVertex3f(600, 600, 50)    
+    glVertex3f(600, 600, 0)
+    glVertex3f(600, -600, 0)
+    glVertex3f(600, -600, 50)
+
+    glColor3f(1, 0.5, 1)
+    glVertex3f(600, -600, 50)
+    glVertex3f(600, -600, 0)    
+    glVertex3f(-600, -600, 0)
+    glVertex3f(-600, -600, 50)
     glEnd()
 
 def draw_tile(is_white=True):
