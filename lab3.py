@@ -8,16 +8,30 @@ fovY = 120
 
 def borders_of_grid():
     glBegin(GL_QUADS)
-    glColor3f(1, 1, 1)
+    glColor3f(0, 0.3, 1)
     glVertex3f(-700, -600, 50)
     glVertex3f(-600, -600, 50)
     glVertex3f(-600, 600, 50)
     glVertex3f(-700, 600, 50)
 
+    # glColor3f(1, 0, 0)
+    # glVertex3f(-700, -600, 0)
+    # glVertex3f(-600, -600, 0)
+    # glVertex3f(-600, 600, 0)
+    # glVertex3f(-700, 600, 0)
+
+    # glColor3f(0, 1, 0)
+    # glVertex3f(-700, -600, 50)
+    # glVertex3f(-700, -600, 0)
+    # glVertex3f(-700, 600, 0)
+    # glVertex3f(-700, 600, 50)
+
+    glColor3f(0, 0, 1)
     glVertex3f(-600, -600, 50)
-    glVertex3f(-600, -600, 50)
+    glVertex3f(-600, -600, 0)
+    glVertex3f(-600, 600, 0)
     glVertex3f(-600, 600, 50)
-    glVertex3f(-600, 600, 50)
+
     glEnd()
 
 def draw_tile(is_white=True):
