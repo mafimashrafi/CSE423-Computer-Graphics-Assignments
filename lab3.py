@@ -1,11 +1,25 @@
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
+import random
 
 Grid_length = 60
-camera_pos = (0, -400, 6) 
+camera_pos = (-400, 0, 600) 
 fovY = 120
 player_x, player_y, player_z = 0, 0, 0 
+enemie = [(random.randint(-550, 550),random.randint(-550, 550), 40), (random.randint(-550, 550), random.randint(-550, 550), 40),
+          (random.randint(-550, 550), random.randint(-550, 550), 40), (random.randint(-550, 550), random.randint(-550, 550), 40),
+          (random.randint(-550, 550), random.randint(-550, 550), 40)]
+
+def enemies(enemy_x, enemy_y, enemy_z):
+    glPushMatrix()
+    glColor(1, 0, 0)
+    glTranslatef(enemy_x, enemy_y, enemy_z)
+    glutSolidSphere(40, 10, 10)
+    glColor(0, 1, 0)
+    glTranslatef(0, 0, 50)
+    glutSolidSphere(20, 10, 10)
+    glPopMatrix()
 
 def borders_of_grid():
     global player_x, player_y, player_z
@@ -36,6 +50,7 @@ def borders_of_grid():
     glVertex3f(-600, -600, 100)
     glEnd()
 
+    #making body and gun
     glPushMatrix()
     glColor3f(1, 0, 0)
     glTranslatef(player_x, player_y, player_z)  
@@ -87,6 +102,8 @@ def camera_setup():
 
 
 def display():
+    global enemie
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glViewport(0, 0, 1000, 800)
     camera_setup()
@@ -101,8 +118,11 @@ def display():
             draw_tile(is_white)
 
             glPopMatrix()
-    borders_of_grid()   
-
+    borders_of_grid() 
+    for i in enemie:
+        x, y, z = i
+        enemies(x, y, z)
+        
     glutSwapBuffers()
 
 
