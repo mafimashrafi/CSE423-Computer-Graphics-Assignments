@@ -3,7 +3,7 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 Grid_length = 60
-camera_pos = (0, 400, 6) 
+camera_pos = (0, -400, 6) 
 fovY = 120
 player_x, player_y, player_z = 0, 0, 0 
 
@@ -50,9 +50,11 @@ def borders_of_grid():
     glTranslatef(player_x , player_y, player_z+50) 
     glutSolidSphere(20, 10, 10)
     glColor3f(0.5, 0.5, 0.5)
-    # glRotatef(90, 0, 1, 0) 
-    glTranslatef(player_x, player_y, player_z)
-    gluCylinder(gluNewQuadric(), 15, 5, 40, 10, 10)
+    glRotatef(-90, 0, 1, 0) 
+    glRotatef(90, 1, 0, 0)
+    glTranslatef(player_x-40, player_y, player_z + 35)
+    gluCylinder(gluNewQuadric(), 15, 5, 80, 10, 10)
+
     glPopMatrix()
 
 def draw_tile(is_white=True):
