@@ -3,7 +3,7 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 
 # Camera-related variables
-camera_pos = (0,500,500)
+camera_pos = (0,0,500)
 
 fovY = 120  # Field of view
 GRID_LENGTH = 600  # Length of grid lines

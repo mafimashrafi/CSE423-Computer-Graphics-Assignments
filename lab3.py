@@ -4,9 +4,15 @@ from OpenGL.GLUT import *
 import random
 
 Grid_length = 60
-camera_pos = (-400, 0, 600) 
-fovY = 120
+fpps = False
 player_x, player_y, player_z = 0, 0, 0 
+camera_pos = (0, 400, 600)
+fovY = 120
+if fpps == True:
+    player_y += 60
+    fovY = 150
+    camera_pos = (player_x, player_y, player_z+ 65) 
+
 enemie = [(random.randint(-550, 550),random.randint(-550, 550), 40), (random.randint(-550, 550), random.randint(-550, 550), 40),
           (random.randint(-550, 550), random.randint(-550, 550), 40), (random.randint(-550, 550), random.randint(-550, 550), 40),
           (random.randint(-550, 550), random.randint(-550, 550), 40)]

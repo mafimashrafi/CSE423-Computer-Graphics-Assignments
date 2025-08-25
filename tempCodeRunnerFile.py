@@ -1,5 +1,2 @@
-    # glColor3f(0, 0.3, 1)
-    # glVertex3f(-700, -600, 50)
-    # glVertex3f(-600, -600, 50)
-    # glVertex3f(-600, 600, 50)
-    # glVertex3f(-700, 600, 50)
+if fpps == False:
+#     camera_pos = (0, 65, 65) 
