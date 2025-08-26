@@ -63,7 +63,7 @@ def borders_of_grid():
     glVertex3f(-600, 600, 0)
     glVertex3f(-600, 600, 100)
 
-    glColor3f(1, 0, 0)
+    glColor3f(0.5, 0.4, 0.3)
     glVertex3f(-600, 600, 100)
     glVertex3f(-600, 600, 0)
     glVertex3f(600, 600, 0)    
