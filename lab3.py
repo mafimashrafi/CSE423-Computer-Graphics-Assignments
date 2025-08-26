@@ -9,8 +9,9 @@ player_rotation = 0
 player_x, player_y, player_z = 0, 0, 0 
 player_moving_unit, player_rotating_unit, enemie_moving_unit = 10, 5, 1
 
-camera_pos = (400, 0, 600)
 first_person = False
+camera_x, camera_y, camera_z = 400, 0, 800
+camera_pos = (camera_x, camera_y, camera_z)
 
 border_collision_count = 0
 single_bullet = None
@@ -18,9 +19,13 @@ bullet_list = []
 shoot_bullet = False
 max_border_hits = 10
 kill_count = 0
+Higest_score = 0
 
 pause = False
 game_over = False
+
+auto_rotation = False
+auto_shoot = False  # New variable for auto shooting
 
 enemie = [[random.randint(-550, 550),random.randint(-550, 550), 40], [random.randint(-550, 550),random.randint(-550, 550), 40],
           [random.randint(-550, 550),random.randint(-550, 550), 40], [random.randint(-550, 550),random.randint(-550, 550), 40],
@@ -138,12 +143,74 @@ def draw_tile(is_white=True):
     glVertex3f(0, Grid_length, 0)
     glEnd()
 
+def check_enemy_in_line_of_sight():
+    """Check if any enemy is in the gun's line of sight with predictive targeting"""
+    global player_x, player_y, player_rotation, enemie
+    
+    # Calculate gun barrel direction
+    angle_rad = math.radians(player_rotation)
+    gun_dir_x = math.cos(angle_rad - math.pi/2)
+    gun_dir_y = math.sin(angle_rad - math.pi/2)
+    
+    # Gun barrel position
+    gun_x = player_x + 80 * gun_dir_x
+    gun_y = player_y + 80 * gun_dir_y
+    
+    bullet_speed = 20
+    
+    for i, enemy in enumerate(enemie):
+        ex, ey, ez = enemy
+        
+        # Calculate distance to enemy
+        dx = ex - gun_x
+        dy = ey - gun_y
+        dist = math.sqrt(dx*dx + dy*dy)
+        
+        if dist > 0 and dist < 800:  # Reasonable shooting range
+            # Calculate time for bullet to reach enemy
+            time_to_hit = dist / bullet_speed
+            
+            # Predict enemy movement (enemies move toward player)
+            enemy_dx = player_x - ex
+            enemy_dy = player_y - ey
+            enemy_dist = math.sqrt(enemy_dx*enemy_dx + enemy_dy*enemy_dy)
+            
+            if enemy_dist > 0:
+                enemy_dx /= enemy_dist
+                enemy_dy /= enemy_dist
+                
+                # Predict where enemy will be
+                predicted_x = ex + (enemy_dx * enemie_moving_unit * 0.1 * time_to_hit)
+                predicted_y = ey + (enemy_dy * enemie_moving_unit * 0.1 * time_to_hit)
+                
+                # Vector from gun to predicted enemy position
+                pred_dx = predicted_x - gun_x
+                pred_dy = predicted_y - gun_y
+                pred_dist = math.sqrt(pred_dx*pred_dx + pred_dy*pred_dy)
+                
+                if pred_dist > 0:
+                    # Normalize the vector to predicted position
+                    pred_dx_norm = pred_dx / pred_dist
+                    pred_dy_norm = pred_dy / pred_dist
+                    
+                    # Calculate dot product to check alignment
+                    dot_product = gun_dir_x * pred_dx_norm + gun_dir_y * pred_dy_norm
+                    
+                    # Check if enemy is in crosshairs (considering enemy radius)
+                    cross_track_distance = abs(gun_dir_x * pred_dy - gun_dir_y * pred_dx)
+                    
+                    # More precise targeting - enemy must be very close to crosshair line
+                    if dot_product > 0.98 and cross_track_distance < 50:  # 50 units tolerance for enemy radius
+                        return True, i  # Return enemy index for more precise shooting
+    
+    return False, -1
+
 # Add this function after the global variables
 def reset_game():
     """Reset all game elements to initial state"""
     global player_x, player_y, player_z, player_rotation
     global enemie, border_collision_count, single_bullet
-    global pause, shoot_bullet, game_over
+    global pause, shoot_bullet, game_over, auto_rotation, auto_shoot, kill_count
 
     # Reset player position and rotation
     player_x, player_y, player_z = 0, 0, 0
@@ -151,7 +218,7 @@ def reset_game():
 
     # Reset camera
     global camera_pos, fovY
-    camera_pos = (400, 0, 600)
+    camera_pos = (400, 0, 800)
     fovY = 120
 
     # Reset enemies
@@ -170,6 +237,8 @@ def reset_game():
     single_bullet = None
     shoot_bullet = False
     pause = False
+    auto_rotation = False
+    auto_shoot = False
 
     glutPostRedisplay()
 
@@ -195,11 +264,13 @@ def draw_hud():
             f"Kills: {kill_count}",
             f"Missed fire: {border_collision_count}/{max_border_hits}",
             f"Direction: {player_rotation}°",
+            f"Auto Mode: {'ON' if auto_rotation else 'OFF'}",
             "Controls:",
             "W - Move Forward",
             "S - Move Backward",
             "A - Rotate Left",
             "D - Rotate Right",
+            "C - Toggle Auto Mode",
             "V - Toggle View",
             "Space - Pause Game",
             "R - Restart Game",
@@ -210,10 +281,20 @@ def draw_hud():
             f"Kills: {kill_count}",
             f"Missed fire: {border_collision_count}/{max_border_hits}",
             f"Direction: {player_rotation}°",
+            f"Auto Mode: {'ON' if auto_rotation else 'OFF'}",
+            "C - Toggle Auto Mode",
             "V - Toggle View",
             "Space - Pause Game",
             "R - Restart Game",
             "Left Click - Shoot"
+        ]
+
+    if auto_rotation:
+        text_lines = [
+            f"Kills: {kill_count}",
+            f"Missed fire: {border_collision_count}/{max_border_hits}",
+            "CHEAT mode is on",
+            "To STOP it press R"
         ]
 
     glColor3f(1, 1, 1)  # White text color
@@ -321,16 +402,26 @@ def display():
 
 def keyborad_listener(key, x, y):
     global player_x, player_y, player_z, pause, player_moving_unit, player_rotation, player_rotation, player_rotating_unit
-    global game_over, first_person
+    global game_over, first_person, auto_rotation, auto_shoot
 
-    if key == b'v':  # 'v' key to toggle view
-        first_person = not first_person
-        if first_person:
-            fovY = 90  # Better FOV for first person
-        else:
-            fovY = 120  # Original FOV for third person
-        glutPostRedisplay()
-        return    
+    if not auto_rotation:
+        if key == b'f':  # 'f' key to toggle view
+            first_person = not first_person
+            if first_person:
+                fovY = 90  # Better FOV for first person
+            else:
+                fovY = 120  # Original FOV for third person
+            glutPostRedisplay()
+            return 
+    else:
+        if key == b'v' or key == b'f':  # 'f' key to toggle view
+            first_person = not first_person
+            if first_person:
+                fovY = 90  # Better FOV for first person
+            else:
+                fovY = 120  # Original FOV for third person
+            glutPostRedisplay()
+            return   
 
     angle_rad = math.radians(player_rotation)
 
@@ -362,17 +453,10 @@ def keyborad_listener(key, x, y):
     elif key == b'd':
         player_rotation = (player_rotation - player_rotating_unit) % 360 
 
-
-    if key == b'f':
-        fpps = True
-        player_y = 60
-        fovY = 90
-        camera_pos = (player_x, player_y, player_z+ 65)
-
-    if key  == b't':
-        fovY = 120
-        camera_pos = (0, 400, 500)
-
+    if key == b'c':
+        auto_rotation = not auto_rotation
+        auto_shoot = auto_rotation  # Enable auto shooting when auto rotation is enabled
+        
     if key == b'r' or key == b'R':  # Allow both upper and lowercase 'r'
         reset_game()
         return
@@ -383,14 +467,26 @@ def keyborad_listener(key, x, y):
     glutPostRedisplay()
 
 def special_key_listener(key, x, y):
-    global player_rotation, player_rotating_unit
+    global camera_x, camera_y, camera_z, camera_pos
     if key == GLUT_KEY_RIGHT:
-        player_rotation = (player_rotation - player_rotating_unit) % 360
-
+        if camera_x < 800 and camera_y < 800:
+            camera_x += 10
+            camera_y += 10
+        
     if key == GLUT_KEY_LEFT:
-        player_rotation = (player_rotation + player_rotating_unit) % 360
-    
+        if camera_y > -800 and camera_x > -800:
+            camera_x -=10
+            camera_y -= 10
 
+    if key == GLUT_KEY_UP:
+        if camera_z > 10 :
+            camera_z -=10
+
+    if key == GLUT_KEY_DOWN:
+        if camera_z < 1000:
+            camera_z += 10
+
+    camera_pos = (camera_x, camera_y, camera_z)
     glutPostRedisplay()
 
 def mouse_listener(button, state, x, y):
@@ -405,11 +501,13 @@ def mouse_listener(button, state, x, y):
 def animation():
     global enemie, enemie_moving_unit, player_x, player_y, shoot_bullet, bullet_list
     global single_bullet, border_collision_count, pause, game_over, max_border_hits, kill_count
+    global auto_rotation, player_rotation, player_rotating_unit, auto_shoot
 
     if game_over:
         glutPostRedisplay()  # Keep refreshing display for game over text
         return
-                # Check for collision between player and enemies
+        
+    # Check for collision between player and enemies
     player_radius = 40  # Approximate player size
     for enemy in enemie:
         ex, ey, ez = enemy
@@ -421,6 +519,7 @@ def animation():
             game_over = True
             glutPostRedisplay()
             return
+            
     if pause:       
         for i in range(len(enemie)):
             ex, ey, ez = enemie[i]
@@ -443,9 +542,57 @@ def animation():
             # Save new position
             enemie[i] = [ex, ey, ez]
 
-   
-        # Fire a bullet if shoot_bullet is True
-    if shoot_bullet and single_bullet is None:
+    if auto_rotation:
+        player_rotation = (player_rotation + player_rotating_unit) % 360
+
+    # Auto shoot when enemy is in line of sight - only if no bullet is currently fired
+    if auto_shoot and auto_rotation and single_bullet is None:
+        has_target, target_index = check_enemy_in_line_of_sight()
+        if has_target and target_index >= 0:
+            # Get target enemy position
+            target_enemy = enemie[target_index]
+            ex, ey, ez = target_enemy
+            
+            # Calculate predictive targeting
+            angle_rad = math.radians(player_rotation)
+            gun_x = player_x + 80 * math.cos(angle_rad - math.pi/2)
+            gun_y = player_y + 80 * math.sin(angle_rad - math.pi/2)
+            
+            # Distance to target
+            dx = ex - gun_x
+            dy = ey - gun_y
+            dist = math.sqrt(dx*dx + dy*dy)
+            
+            bullet_speed = 20
+            time_to_hit = dist / bullet_speed
+            
+            # Predict where enemy will be
+            enemy_dx = player_x - ex
+            enemy_dy = player_y - ey
+            enemy_dist = math.sqrt(enemy_dx*enemy_dx + enemy_dy*enemy_dy)
+            
+            if enemy_dist > 0:
+                enemy_dx /= enemy_dist
+                enemy_dy /= enemy_dist
+                
+                # Predicted enemy position
+                pred_x = ex + (enemy_dx * enemie_moving_unit * 0.1 * time_to_hit)
+                pred_y = ey + (enemy_dy * enemie_moving_unit * 0.1 * time_to_hit)
+                
+                # Calculate bullet direction to predicted position
+                bullet_dx_to_target = pred_x - gun_x
+                bullet_dy_to_target = pred_y - gun_y
+                bullet_dist = math.sqrt(bullet_dx_to_target*bullet_dx_to_target + bullet_dy_to_target*bullet_dy_to_target)
+                
+                if bullet_dist > 0:
+                    # Normalize and apply speed
+                    bullet_dx = (bullet_dx_to_target / bullet_dist) * bullet_speed
+                    bullet_dy = (bullet_dy_to_target / bullet_dist) * bullet_speed
+                    
+                    single_bullet = [gun_x, gun_y, player_z + 60, bullet_dx, bullet_dy]
+
+    # Manual shooting - Fire a bullet if shoot_bullet is True
+    if shoot_bullet and single_bullet is None and not auto_shoot:
         # Calculate bullet starting position from the gun barrel
         angle_rad = math.radians(player_rotation)
         # Position bullet at the end of the gun barrel
@@ -460,25 +607,23 @@ def animation():
         single_bullet[0] += single_bullet[3]  # Update x position
         single_bullet[1] += single_bullet[4]  # Update y position
 
-        # Check collision with enemies
+        # Check collision with enemies - improved collision detection
         for i, enemy in enumerate(enemie):
             ex, ey, ez = enemy
-            dx = (single_bullet[0] - ex) * 0.5
-            dy = (single_bullet[1] - ey) 
+            dx = single_bullet[0] - ex  # Direct distance calculation
+            dy = single_bullet[1] - ey 
             dist = math.sqrt(dx*dx + dy*dy)
             
-            if dist < 40:  # Enemy radius is 40
-                # enemie.pop(i)
-                # if len(enemie) <= 4: 
+            if dist < 50:  # Slightly larger collision radius for better hit detection
                 kill_count += 1
-                enemie[i] = respawn_enemy()  # Remove hit enemy
+                enemie[i] = respawn_enemy()  # Respawn hit enemy
                 single_bullet = None  # Remove bullet
                 break
 
         # Check collision with borders
         if single_bullet:
             x, y = single_bullet[0], single_bullet[1]
-            if abs(x) >= 600 or abs(y) >= 600:
+            if abs(x) >= 800 or abs(y) >= 800:
                 border_collision_count += 1
                 single_bullet = None
 
@@ -492,7 +637,6 @@ def init():
     glEnable(GL_DEPTH_TEST)
     glClearColor(0, 0, 0, 1)
 
-
 glutInit()
 glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
 glutInitWindowSize(1000, 800)   
@@ -502,7 +646,7 @@ init()
 glutDisplayFunc(display)
 glutKeyboardFunc(keyborad_listener)
 glutMouseFunc(mouse_listener)
-# glutSpecialFunc(special_key_listener)
+glutSpecialFunc(special_key_listener)
 glutIdleFunc(animation)
 
 glutMainLoop()
