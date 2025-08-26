@@ -1,5 +1,3 @@
-   glColor3f(1, 0, 0)
-    glTranslatef(player_x, player_y, player_z)  
-    gluCylinder(gluNewQuadric(), 10, 15, 20, 10, 10)
-    glTranslatef(player_x+40, player_y, player_z)  
-    gluCylinder(gluNewQuadric(), 10, 15, 20, 10, 10)
+    for i in enemie:
+        x, y, z = i
+        enemies(x, y, z)
