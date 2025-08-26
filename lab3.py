@@ -6,7 +6,7 @@ import random
 Grid_length = 60
 fpps = False
 player_x, player_y, player_z = 0, 0, 0 
-camera_pos = (0, 400, 600)
+camera_pos = (0, 400, 500)
 fovY = 120
 if fpps == True:
     player_y += 60
@@ -131,6 +131,33 @@ def display():
         
     glutSwapBuffers()
 
+def keyborad_listener(key, x, y):
+    global player_x, player_y, player_z, fpps, camera_pos, fovY
+    if key == b'w':
+        player_y -= 1
+    if key == b's':
+        player_y +=1
+    if key == b'a':
+        player_x +=1
+    if key == b'd':
+        player_x -=1
+    
+
+    if key == b'f':
+        fpps = True
+        player_y = 60
+        fovY = 150
+        camera_pos = (player_x, player_y, player_z+ 65)
+
+    if key  == b't':
+        fovY = 120
+        camera_pos = (0, 400, 500)
+
+    glutPostRedisplay()
+
+def animation():
+    global enemie
+
 
 def init():
     glEnable(GL_DEPTH_TEST)
@@ -144,5 +171,6 @@ glutInitWindowPosition(100, 100)
 window = glutCreateWindow(b"3D OpenGL Checkerboard Grid")
 init()
 glutDisplayFunc(display)
+glutKeyboardFunc(keyborad_listener)
 
 glutMainLoop()
