@@ -6,7 +6,7 @@ import random
 Grid_length = 60
 fpps = False
 player_x, player_y, player_z = 0, 0, 0 
-camera_pos = (0, 400, 500)
+camera_pos = (0, -400, 500)
 fovY = 120
 if fpps == True:
     player_y += 60
@@ -61,21 +61,32 @@ def borders_of_grid():
     glColor3f(1, 0, 0)
     glTranslatef(player_x, player_y, player_z)  
     gluCylinder(gluNewQuadric(), 10, 15, 20, 10, 10)
+    glPopMatrix()
+
+    glPushMatrix()
     glTranslatef(player_x+40, player_y, player_z)  
     gluCylinder(gluNewQuadric(), 10, 15, 20, 10, 10)
+    glPopMatrix()
+
+    glPushMatrix()
     glColor3f(0, 1, 0)
-    glTranslatef(player_x - 20, player_y, player_z+60)
+    glTranslatef(player_x + 20, player_y, player_z + 60)
     glScalef(1.2, 0.5, 1.3)
     glutSolidCube(60)
+    glPopMatrix()
+
+    glPushMatrix()
     glColor3f(0, 0, 1)
-    glTranslatef(player_x , player_y, player_z+50) 
+    glTranslatef(player_x + 20, player_y, player_z+ 120) 
     glutSolidSphere(20, 10, 10)
+    glPopMatrix()
+
+    glPushMatrix()
     glColor3f(0.5, 0.5, 0.5)
+    glTranslatef(player_x + 20, player_y , player_z + 60)
     glRotatef(-90, 0, 1, 0) 
     glRotatef(90, 1, 0, 0)
-    glTranslatef(player_x-40, player_y, player_z + 35)
     gluCylinder(gluNewQuadric(), 15, 5, 80, 10, 10)
-
     glPopMatrix()
 
 def draw_tile(is_white=True):
