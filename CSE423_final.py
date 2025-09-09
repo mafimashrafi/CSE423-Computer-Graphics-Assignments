@@ -15,6 +15,7 @@ window_width = 800
 window_height = 600
 game_time = 0
 miss_target = 0
+miss_hit = 0
 
 # Colors for Olympic-style targets
 WHITE = (1.0, 1.0, 1.0)
@@ -107,8 +108,9 @@ class OlympicTarget:
             self.active = False
             if not self.hit:
                 miss_target+=1
+                miss_hit += 1
                 print("Target disappeared! No points.")
-                if miss_target >= 3:
+                if miss_target >= 3 or miss_hit >= 5:
                     game_over = False
                     game_running = False
                     if score > max_score:
