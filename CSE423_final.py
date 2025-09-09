@@ -103,7 +103,7 @@ class OlympicTarget:
         self.hit = False
 
     def update(self):
-        global miss_target, game_over, game_running, max_score, score
+        global miss_target, game_over, game_running, max_score, score, miss_hit
         if time.time() - self.spawn_time > self.lifetime:
             self.active = False
             if not self.hit:
