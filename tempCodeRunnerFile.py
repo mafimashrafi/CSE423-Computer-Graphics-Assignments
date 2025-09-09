@@ -1,30 +1,34 @@
-def draw_crosshair():
-#     """Draw simple crosshair for aiming"""
-#     glMatrixMode(GL_PROJECTION)
-#     glPushMatrix()
-#     glLoadIdentity()
-#     gluOrtho2D(0, window_width, 0, window_height)
-    
-#     glMatrixMode(GL_MODELVIEW)
-#     glPushMatrix()
-#     glLoadIdentity()
-    
-#     glDisable(GL_DEPTH_TEST)
-#     glColor3f(0.0, 1.0, 0.0)  # Green crosshair
-#     glLineWidth(1.0)
-    
-#     # Simple small crosshair
-#     size = 8
-#     glBegin(GL_LINES)
-#     glVertex2f(window_width/2 - size, window_height/2)
-#     glVertex2f(window_width/2 + size, window_height/2)
-#     glVertex2f(window_width/2, window_height/2 - size)
-#     glVertex2f(window_width/2, window_height/2 + size)
-#     glEnd()
-    
-#     glEnable(GL_DEPTH_TEST)
-    
-#     glPopMatrix()
-#     glMatrixMode(GL_PROJECTION)
-#     glPopMatrix()
-#     glMatrixMode(GL_MODELVIEW)
+    def check_collision(self, bullet):
+        if not self.active or not bullet.active or self.hit:
+            return 0
+
+        # 3D distance between bullet and target center
+        distance = math.sqrt(
+            (self.x - bullet.x)**2 +
+            (self.y - bullet.y)**2 +
+            (self.z - bullet.z)**2
+        )
+
+        # Target hit if within target size
+        if distance <= self.size * 0.3:  # Bullseye
+            self.hit = True
+            bullet.active = False
+            return 10
+        elif distance <= self.size * 0.5:
+            self.hit = True
+            bullet.active = False
+            return 9
+        elif distance <= self.size * 0.7:
+            self.hit = True
+            bullet.active = False
+            return 7
+        elif distance <= self.size * 0.9:
+            self.hit = True
+            bullet.active = False
+            return 5
+        elif distance <= self.size:
+            self.hit = True
+            bullet.active = False
+            return 1
+
+        return 0

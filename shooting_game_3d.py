@@ -459,11 +459,14 @@ def init():
     # Spawn first target
     spawn_target()
     
-    print("=== Olympic Shooting Range ===")
-    print("Welcome to the Olympic shooting range!")
-    print("Targets will appear randomly and disappear after 8 seconds.")
-    print("Scoring: Bullseye=10, Inner=9, Red=7, Blue=5, Outer=1")
-    print("Use mouse to aim, left click to shoot. Good luck!")
+    print("=== Sphere Target Shooting Range ===")
+    print("Welcome to the shooting range!")
+    print("Targets are colored spheres with different sizes and points:")
+    print("- RED (Large): 5 points - Easy to hit")
+    print("- BLUE (Medium): 10 points - Medium difficulty") 
+    print("- GREEN (Small): 20 points - Hard to hit, highest score!")
+    print("Targets disappear after 8 seconds. Use mouse to aim, left click to shoot!")
+    print("Good luck!")
 
 def main():
     glutInit()
