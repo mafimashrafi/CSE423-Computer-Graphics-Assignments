@@ -14,6 +14,7 @@ mouse_y = 300
 window_width = 800
 window_height = 600
 game_time = 0
+miss_target = 0
 
 # Colors for Olympic-style targets
 WHITE = (1.0, 1.0, 1.0)
@@ -27,6 +28,8 @@ GRAY = (0.5, 0.5, 0.5)
 
 game_running = False
 game_paused = False
+game_over = True
+max_score = -math.inf
 
 class Bullet:
     def __init__(self, x, y, z, direction_x, direction_y, direction_z):
@@ -99,10 +102,17 @@ class OlympicTarget:
         self.hit = False
 
     def update(self):
+        global miss_target, game_over, game_running, max_score, score
         if time.time() - self.spawn_time > self.lifetime:
             self.active = False
             if not self.hit:
+                miss_target+=1
                 print("Target disappeared! No points.")
+                if miss_target >= 3:
+                    game_over = False
+                    game_running = False
+                    if score > max_score:
+                        max_score
 
     def draw(self):
         if self.active:
@@ -230,11 +240,6 @@ def shoot():
     bullets.append(bullet)
     print("Shot fired!")
 
-def draw_text(text, x, y):
-    """Draw text on screen"""
-    glRasterPos2f(x, y)
-    for char in text:
-        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord(char))
 
 def draw_crosshair():
     """Draw simple crosshair for aiming"""
@@ -274,7 +279,7 @@ def draw_text_3d(text, x, y):
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord(char))
 
 def draw_hud():
-    global game_paused, game_running
+    global game_paused, game_running, max_score
     glDisable(GL_DEPTH_TEST)
     # --- Score on the back wall (top center) ---
     glColor3f(*WHITE)
@@ -283,7 +288,16 @@ def draw_hud():
     # No rotation needed; text faces forward by default
     draw_text_3d(f"Score: {score}", 0, 0)
     if game_paused:
-        draw_text_3d("PAUSED", -3, -2)
+        draw_text_3d("PAUSED", 0, -5)
+    if not game_over:
+        glColor3f(*RED)
+        glTranslatef(-7, 12, -39)
+        draw_text_3d("Game Over: Press TAB Start", -6, -3)
+    glColor3f(*RED)
+    glTranslatef(0, 15, 30)
+    draw_text_3d(f"Max Score: {max_score}", 0, 0)
+    draw_text_3d("You Might Break Your NECK", -3, -3)
+    draw_text_3d("Look Downard", 0, -6)
     glPopMatrix()
 
 
@@ -420,25 +434,31 @@ def mouse_click(button, state, x, y):
             shoot()
 
 def keyboard(key, x, y):
-    global game_running, game_paused, score, bullets, targets, game_time
+    global game_running, game_paused, score, bullets, targets, game_time, game_over
+    global max_score, score
 
     if key == b'\033': 
         glutDestroyWindow(glutGetWindow()) # ESC key
         sys.exit(0)
-    elif key == b' ':  # Space bar toggles play/pause
-        if game_running:
-            game_paused = not game_paused
-            print("Paused" if game_paused else "Resumed")
-        else:
-            game_running = True
-            game_paused = False
-            print("Game Started")
-    elif key == b'\t':  # Tab key restarts the game
+    if game_over:
+        if key == b' ':  # Space bar toggles play/pause
+            if game_running:
+                game_paused = not game_paused
+                print("Paused" if game_paused else "Resumed")
+            else:
+                game_running = True
+                game_paused = False
+                print("Game Started")
+    if key == b'\t':
+  # Tab key restarts the game
+        if max_score < score:
+            max_score = score
+        game_over = True
         score = 0
         bullets.clear()
         targets.clear()
         game_time = 0
-        game_running = True
+        game_running = False
         game_paused = False
         spawn_target()
         print("Game Restarted")
@@ -457,7 +477,7 @@ def init():
     
     glClearColor(0.6, 0.8, 1.0, 1.0)  # Sky blue background
     
-    if game_running:
+    if game_running and game_over:
         spawn_target()
     
     print("=== Olympic Shooting Range ===")
