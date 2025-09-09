@@ -26,6 +26,7 @@ GREEN = (0.0, 1.0, 0.0)
 BROWN = (0.6, 0.3, 0.1)
 GRAY = (0.5, 0.5, 0.5)
 
+
 class Bullet:
     def __init__(self, x, y, z, direction_x, direction_y, direction_z):
         self.x = x
@@ -70,123 +71,64 @@ class Bullet:
             glutSolidSphere(0.05, 6, 6)
             glPopMatrix()
 
+class TargetType:
+    def __init__(self, color, size, score):
+        self.color = color
+        self.size = size
+        self.score = score
+
+# Define some target types
+TARGET_TYPES = [
+    TargetType((1.0, 0.0, 0.0), 2.0, 10),   # Red, small, high score
+    TargetType((0.0, 1.0, 0.0), 2.8, 7),    # Green, medium, medium score
+    TargetType((0.0, 0.0, 1.0), 3.5, 4),    # Blue, large, low score
+    TargetType((1.0, 1.0, 0.0), 1.2, 15),   # Yellow, very small, highest score
+    ]
 class OlympicTarget:
-    def __init__(self, x, y, z):
+    def __init__(self, x, y, z, target_type):
         self.x = x
         self.y = y
         self.z = z
         self.active = True
         self.spawn_time = time.time()
-        self.lifetime = 8.0  # Target stays for 8 seconds
-        self.size = 2.0
+        self.lifetime = 8.0
+        self.size = target_type.size
+        self.color = target_type.color
+        self.score_value = target_type.score
         self.hit = False
-        
+
     def update(self):
-        # Check if target should disappear
         if time.time() - self.spawn_time > self.lifetime:
             self.active = False
             if not self.hit:
                 print("Target disappeared! No points.")
-    
+
     def draw(self):
         if self.active:
             glPushMatrix()
             glTranslatef(self.x, self.y, self.z)
-            
-            # Draw target backing (white circle)
-            glColor3f(*WHITE)
+            glColor3f(*self.color)
             self.draw_filled_circle(self.size)
-            
-            # Draw scoring rings from outside to inside
-            # Outer ring (1 point) - Black
-            glColor3f(*BLACK)
-            self.draw_ring(self.size * 0.9, self.size)
-            
-            # Second ring (5 points) - Blue  
-            glColor3f(*BLUE)
-            self.draw_ring(self.size * 0.7, self.size * 0.9)
-            
-            # Third ring (7 points) - Red
-            glColor3f(*RED)
-            self.draw_ring(self.size * 0.5, self.size * 0.7)
-            
-            # Inner ring (9 points) - Gold/Yellow
-            glColor3f(1.0, 0.8, 0.0)
-            self.draw_ring(self.size * 0.3, self.size * 0.5)
-            
-            # Bullseye (10 points) - Black center
-            glColor3f(*BLACK)
-            self.draw_filled_circle(self.size * 0.3)
-            
-            # Draw target frame
-            glColor3f(*BLACK)
-            glLineWidth(3.0)
-            self.draw_circle_outline(self.size)
-            glLineWidth(1.0)
-            
             glPopMatrix()
-    
+
     def draw_filled_circle(self, radius):
         glBegin(GL_TRIANGLE_FAN)
         glVertex3f(0, 0, 0)
-        for i in range(33):  # 32 segments + 1 to close
+        for i in range(33):
             angle = 2.0 * math.pi * i / 32
             glVertex3f(radius * math.cos(angle), radius * math.sin(angle), 0)
         glEnd()
-    
-    def draw_ring(self, inner_radius, outer_radius):
-        glBegin(GL_TRIANGLE_STRIP)
-        for i in range(33):  # 32 segments + 1 to close
-            angle = 2.0 * math.pi * i / 32
-            cos_a = math.cos(angle)
-            sin_a = math.sin(angle)
-            # Outer vertex
-            glVertex3f(outer_radius * cos_a, outer_radius * sin_a, 0)
-            # Inner vertex
-            glVertex3f(inner_radius * cos_a, inner_radius * sin_a, 0)
-        glEnd()
-    
-    def draw_circle_outline(self, radius):
-        glBegin(GL_LINE_LOOP)
-        for i in range(32):
-            angle = 2.0 * math.pi * i / 32
-            glVertex3f(radius * math.cos(angle), radius * math.sin(angle), 0)
-        glEnd()
-    
-    def check_collision(self, bullet):
+
+    def is_hit_by(self, bullet):
+        # Only check if both are active and not already hit
         if not self.active or not bullet.active or self.hit:
-            return 0
-        
-        # Calculate distance from bullet to target center
-        distance = math.sqrt((self.x - bullet.x)**2 + (self.y - bullet.y)**2)
-        
-        # Check if bullet is close enough in Z direction
-        if abs(self.z - bullet.z) > 0.3:
-            return 0
-        
-        # Check which ring was hit and return score
-        if distance <= self.size * 0.3:  # Bullseye
-            self.hit = True
-            bullet.active = False
-            return 10
-        elif distance <= self.size * 0.5:  # Inner ring
-            self.hit = True
-            bullet.active = False
-            return 9
-        elif distance <= self.size * 0.7:  # Third ring
-            self.hit = True
-            bullet.active = False
-            return 7
-        elif distance <= self.size * 0.9:  # Second ring
-            self.hit = True
-            bullet.active = False
-            return 5
-        elif distance <= self.size:  # Outer ring
-            self.hit = True
-            bullet.active = False
-            return 1
-        
-        return 0
+            return False
+        # Use full 3D distance for collision
+        dx = self.x - bullet.x
+        dy = self.y - bullet.y
+        dz = self.z - bullet.z
+        distance = math.sqrt(dx*dx + dy*dy + dz*dz)
+        return distance <= self.size
 
 def draw_shooting_range():
     """Draw the shooting range environment"""
@@ -243,38 +185,39 @@ def draw_shooting_range():
     glEnd()
 
 def spawn_target():
-    """Spawn a new target at random position"""
     global targets
-    
     # Random position on the back wall
     x = random.uniform(-20, 20)
     y = random.uniform(-8, 10)
-    z = -39  # Just in front of back wall
-    
-    target = OlympicTarget(x, y, z)
+    z = -39
+    target_type = random.choice(TARGET_TYPES)
+    target = OlympicTarget(x, y, z, target_type)
     targets.append(target)
-    print(f"New target appeared at ({x:.1f}, {y:.1f})! Shoot it before it disappears!")
+    print(f"New target ({target_type.score} pts) at ({x:.1f}, {y:.1f})!")
 
 def shoot():
     global bullets, mouse_x, mouse_y, window_width, window_height
-    
-    # Convert mouse position to world coordinates
-    norm_x = (2.0 * mouse_x / window_width) - 1.0
-    norm_y = 1.0 - (2.0 * mouse_y / window_height)
-    
-    # Calculate shooting direction from shooting position
-    direction_x = norm_x * 0.8
-    direction_y = norm_y * 0.8
-    direction_z = -1.0
-    
+
+    # Camera position
+    cam_x, cam_y, cam_z = 0, 0, 5
+
+    # Calculate mouse look direction (same as display)
+    mouse_look_x = (mouse_x - window_width/2) * 0.005
+    mouse_look_y = (mouse_y - window_height/2) * 0.005
+
+    # Direction vector from camera to crosshair
+    look_x = math.sin(mouse_look_x)
+    look_y = mouse_look_y
+    look_z = -math.cos(mouse_look_x)
+
     # Normalize direction
-    length = math.sqrt(direction_x**2 + direction_y**2 + direction_z**2)
-    direction_x /= length
-    direction_y /= length
-    direction_z /= length
-    
-    # Create bullet from shooting position
-    bullet = Bullet(0, -1, 3, direction_x, direction_y, direction_z)
+    length = math.sqrt(look_x**2 + look_y**2 + look_z**2)
+    direction_x = look_x / length
+    direction_y = look_y / length
+    direction_z = look_z / length
+
+    # Create bullet from camera position
+    bullet = Bullet(cam_x, cam_y, cam_z, direction_x, direction_y, direction_z)
     bullets.append(bullet)
     print("Shot fired!")
 
@@ -316,33 +259,28 @@ def draw_crosshair():
     glMatrixMode(GL_MODELVIEW)
 
 def draw_hud():
-    """Draw game HUD"""
     glMatrixMode(GL_PROJECTION)
     glPushMatrix()
     glLoadIdentity()
     gluOrtho2D(0, window_width, 0, window_height)
-    
     glMatrixMode(GL_MODELVIEW)
     glPushMatrix()
     glLoadIdentity()
-    
     glDisable(GL_DEPTH_TEST)
     glColor3f(*WHITE)
-    
-    # Score
     draw_text(f"Score: {score}", 10, window_height - 30)
-    
-    # Active targets
     active_targets = len([t for t in targets if t.active])
     draw_text(f"Active Targets: {active_targets}", 10, window_height - 60)
-    
-    # Instructions
     draw_text("Left Click: Shoot", 10, window_height - 100)
-    draw_text("Bullseye=10pts, Inner=9pts, Red=7pts, Blue=5pts, Outer=1pt", 10, 30)
+    # Show target types and scores
+    y_offset = window_height - 130
+    for tt in TARGET_TYPES:
+        glColor3f(*tt.color)
+        draw_text(f"{tt.score} pts", 10, y_offset)
+        y_offset -= 20
+    glColor3f(*WHITE)
     draw_text("Targets disappear after 8 seconds!", 10, 10)
-    
     glEnable(GL_DEPTH_TEST)
-    
     glPopMatrix()
     glMatrixMode(GL_PROJECTION)
     glPopMatrix()
@@ -350,34 +288,39 @@ def draw_hud():
 
 def update_game():
     global bullets, targets, score, game_time
-    
+
     game_time += 0.016  # Roughly 60 FPS
-    
+
     # Update bullets
     for bullet in bullets[:]:
         bullet.update()
         if not bullet.active:
             bullets.remove(bullet)
-    
+
     # Update targets
     for target in targets[:]:
         target.update()
         if not target.active:
             targets.remove(target)
-    
-    # Check collisions with detailed logging
-    for bullet in bullets:
-        for target in targets:
-            points = target.check_collision(bullet)
-            if points > 0:
-                score += points
-                print(f"SCORE UPDATE! +{points} points! Total score: {score}")
-                break
-    
+
+    # Check collisions and update score
+    for bullet in bullets[:]:
+        for target in targets[:]:
+            if target.is_hit_by(bullet):
+                score += target.score_value
+                print(f"SCORE UPDATE! +{target.score_value} points! Total score: {score}")
+                target.hit = True
+                target.active = False
+                bullet.active = False
+                if bullet in bullets:
+                    bullets.remove(bullet)
+                glutPostRedisplay()
+                break  # Only one target per bullet
+
     # Spawn new targets occasionally
     active_targets = len([t for t in targets if t.active])
-    if active_targets == 0 or (game_time > 3.0 and random.random() < 0.01):  # 1% chance per frame after 3 seconds
-        if active_targets < 3:  # Max 3 targets at once
+    if active_targets == 0 or (game_time > 3.0 and random.random() < 0.01):
+        if active_targets < 3:
             spawn_target()
 
 def display():
@@ -385,25 +328,28 @@ def display():
     
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    
-    # Position camera at shooting position
-    gluLookAt(0, 0, 5,      # Camera at shooting booth
-              0, 0, -10,    # Looking down range
-              0, 1, 0)      # Up vector
-    
-    # Apply slight mouse look for aiming
+
+    # Calculate mouse look direction
     mouse_look_x = (mouse_x - window_width/2) * 0.005
     mouse_look_y = (mouse_y - window_height/2) * 0.005
-    glRotatef(mouse_look_y * 5, 1, 0, 0)
-    glRotatef(mouse_look_x * 5, 0, 1, 0)
-    
-    # Draw shooting range
+
+    # Camera position
+    cam_x, cam_y, cam_z = 0, 0, 5
+
+    # Camera look direction (forward, adjusted by mouse)
+    look_x = cam_x + math.sin(mouse_look_x) * 10
+    look_y = cam_y + mouse_look_y * 10
+    look_z = cam_z - math.cos(mouse_look_x) * 10
+
+    gluLookAt(cam_x, cam_y, cam_z,
+            look_x, look_y, look_z,
+            0, 1, 0)
+
+    # Draw shooting range and targets
     draw_shooting_range()
-    
-    # Draw targets
     for target in targets:
         target.draw()
-    
+
     # Draw bullets
     for bullet in bullets:
         bullet.draw()
