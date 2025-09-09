@@ -1,34 +1,18 @@
-    def check_collision(self, bullet):
+    def is_hit_by(self, bullet):
         if not self.active or not bullet.active or self.hit:
-            return 0
+            return False
 
-        # 3D distance between bullet and target center
-        distance = math.sqrt(
-            (self.x - bullet.x)**2 +
-            (self.y - bullet.y)**2 +
-            (self.z - bullet.z)**2
-        )
-
-        # Target hit if within target size
-        if distance <= self.size * 0.3:  # Bullseye
-            self.hit = True
-            bullet.active = False
-            return 10
-        elif distance <= self.size * 0.5:
-            self.hit = True
-            bullet.active = False
-            return 9
-        elif distance <= self.size * 0.7:
-            self.hit = True
-            bullet.active = False
-            return 7
-        elif distance <= self.size * 0.9:
-            self.hit = True
-            bullet.active = False
-            return 5
-        elif distance <= self.size:
-            self.hit = True
-            bullet.active = False
-            return 1
-
-        return 0
+        # Check if bullet crosses the target's z-plane between frames
+        prev_z = bullet.z - bullet.dz
+        # If bullet moved past the target's z position this frame
+        if (prev_z > self.z and bullet.z <= self.z) or abs(bullet.z - self.z) < bullet.dz:
+            # Check (x, y) distance at the z-plane of the target
+            # Interpolate bullet position at target z
+            t = (self.z - prev_z) / (bullet.z - prev_z) if bullet.z != prev_z else 0
+            bx = bullet.x - bullet.dx + bullet.dx * t
+            by = bullet.y - bullet.dy + bullet.dy * t
+            dx = self.x - bx
+            dy = self.y - by
+            distance = math.sqrt(dx*dx + dy*dy)
+            return distance <= self.size
+        return False

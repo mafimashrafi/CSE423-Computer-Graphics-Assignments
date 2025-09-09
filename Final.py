@@ -26,6 +26,8 @@ GREEN = (0.0, 1.0, 0.0)
 BROWN = (0.6, 0.3, 0.1)
 GRAY = (0.5, 0.5, 0.5)
 
+game_running = False
+game_paused = False
 
 class Bullet:
     def __init__(self, x, y, z, direction_x, direction_y, direction_z):
@@ -50,7 +52,7 @@ class Bullet:
             self.z += self.dz
             
             # Remove bullet if it goes too far or hits back wall
-            if self.z < -35 or abs(self.x) > 25 or abs(self.y) > 15:
+            if self.z < -41 or abs(self.x) > 25 or abs(self.y) > 15:
                 self.active = False
     
     def draw(self):
@@ -120,15 +122,23 @@ class OlympicTarget:
         glEnd()
 
     def is_hit_by(self, bullet):
-        # Only check if both are active and not already hit
         if not self.active or not bullet.active or self.hit:
             return False
-        # Use full 3D distance for collision
-        dx = self.x - bullet.x
-        dy = self.y - bullet.y
-        dz = self.z - bullet.z
-        distance = math.sqrt(dx*dx + dy*dy + dz*dz)
-        return distance <= self.size
+
+        # Check if bullet crosses the target's z-plane between frames
+        prev_z = bullet.z - bullet.dz
+        # If bullet moved past the target's z position this frame
+        if (prev_z > self.z and bullet.z <= self.z) or abs(bullet.z - self.z) < bullet.dz:
+            # Check (x, y) distance at the z-plane of the target
+            # Interpolate bullet position at target z
+            t = (self.z - prev_z) / (bullet.z - prev_z) if bullet.z != prev_z else 0
+            bx = bullet.x - bullet.dx + bullet.dx * t
+            by = bullet.y - bullet.dy + bullet.dy * t
+            dx = self.x - bx
+            dy = self.y - by
+            distance = math.sqrt(dx*dx + dy*dy)
+            return distance <= self.size
+        return False
 
 def draw_shooting_range():
     """Draw the shooting range environment"""
@@ -239,7 +249,7 @@ def draw_crosshair():
     glLoadIdentity()
     
     glDisable(GL_DEPTH_TEST)
-    glColor3f(0.0, 1.0, 0.0)  # Green crosshair
+    glColor3f(0.0, 0.0, 0.0)  # Green crosshair
     glLineWidth(1.0)
     
     # Simple small crosshair
@@ -323,6 +333,73 @@ def update_game():
         if active_targets < 3:
             spawn_target()
 
+def draw_icons():
+    glMatrixMode(GL_PROJECTION)
+    glPushMatrix()
+    glLoadIdentity()
+    gluOrtho2D(0, window_width, 0, window_height)
+    glMatrixMode(GL_MODELVIEW)
+    glPushMatrix()
+    glLoadIdentity()
+    glDisable(GL_DEPTH_TEST)
+
+    icon_size = 40
+    margin = 20
+    base_x = window_width - icon_size - margin
+
+    # Start icon (triangle)
+    if not game_running:
+        glColor3f(0.2, 0.8, 0.2)
+        glBegin(GL_TRIANGLES)
+        glVertex2f(base_x, window_height - margin - icon_size)
+        glVertex2f(base_x, window_height - margin)
+        glVertex2f(base_x + icon_size, window_height - margin - icon_size/2)
+        glEnd()
+    # Pause icon (two vertical bars)
+    elif not game_paused:
+        glColor3f(0.8, 0.8, 0.2)
+        glBegin(GL_QUADS)
+        glVertex2f(base_x, window_height - margin - icon_size)
+        glVertex2f(base_x + icon_size/3, window_height - margin - icon_size)
+        glVertex2f(base_x + icon_size/3, window_height - margin)
+        glVertex2f(base_x, window_height - margin)
+        glVertex2f(base_x + icon_size*2/3, window_height - margin - icon_size)
+        glVertex2f(base_x + icon_size, window_height - margin - icon_size)
+        glVertex2f(base_x + icon_size, window_height - margin)
+        glVertex2f(base_x + icon_size*2/3, window_height - margin)
+        glEnd()
+    # Restart icon (circle with arrow)
+    else:
+        glColor3f(0.2, 0.6, 1.0)
+        cx = base_x + icon_size/2
+        cy = window_height - margin - icon_size/2
+        r = icon_size/2 - 4
+        glBegin(GL_LINE_LOOP)
+        for i in range(24):
+            angle = 2 * math.pi * i / 24
+            glVertex2f(cx + r * math.cos(angle), cy + r * math.sin(angle))
+        glEnd()
+        # Arrow head
+        glBegin(GL_TRIANGLES)
+        glVertex2f(cx + r, cy)
+        glVertex2f(cx + r - 10, cy + 7)
+        glVertex2f(cx + r - 10, cy - 7)
+        glEnd()
+
+    glEnable(GL_DEPTH_TEST)
+    glPopMatrix()
+    glMatrixMode(GL_PROJECTION)
+    glPopMatrix()
+    glMatrixMode(GL_MODELVIEW)
+
+def restart_game():
+    global score, bullets, targets, game_time
+    score = 0
+    bullets.clear()
+    targets.clear()
+    game_time = 0
+    spawn_target()
+
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     
@@ -357,7 +434,7 @@ def display():
     # Draw HUD
     draw_crosshair()
     draw_hud()
-    
+    draw_icons() 
     glutSwapBuffers()
 
 def reshape(width, height):
@@ -378,12 +455,38 @@ def mouse_motion(x, y):
     glutPostRedisplay()
 
 def mouse_click(button, state, x, y):
+    global game_running, game_paused
     global mouse_x, mouse_y
     mouse_x = x
     mouse_y = y
     
+    # if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
+    #     shoot()
+
+    icon_size = 40
+    margin = 20
+    base_x = window_width - icon_size - margin
+    icon_top = window_height - margin
+    icon_bottom = window_height - margin - icon_size
+
     if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
-        shoot()
+        # Check if click is inside icon area
+        if base_x <= x <= base_x + icon_size and icon_bottom <= y <= icon_top:
+            if not game_running:
+                game_running = True
+                game_paused = False
+            elif not game_paused:
+                game_paused = True
+            else:
+                # Restart
+                restart_game()
+                game_running = True
+                game_paused = False
+            glutPostRedisplay()
+            return
+        # Only shoot if game is running and not paused
+        if game_running and not game_paused:
+            shoot()
 
 def keyboard(key, x, y):
     if key == b'\033':  # ESC key
@@ -391,9 +494,10 @@ def keyboard(key, x, y):
         sys.exit()
 
 def timer(value):
-    update_game()
+    if game_running and not game_paused:
+        update_game()
     glutPostRedisplay()
-    glutTimerFunc(16, timer, 0)  # ~60 FPS
+    glutTimerFunc(16, timer, 0)
 
 def init():
     glEnable(GL_DEPTH_TEST)
