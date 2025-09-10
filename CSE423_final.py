@@ -5,7 +5,57 @@ import math
 import random
 import sys
 import time
+import pygame
 
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
+import math
+import random
+import sys
+import time
+import pygame  
+
+# Initialize pygame mixer
+# ✅ Initialize pygame for sound
+pygame.mixer.pre_init(44100, -16, 2, 512)
+pygame.init()
+pygame.mixer.init()
+
+try:
+    gun_sound = pygame.mixer.Sound("gun_fire.wav")
+    bomb_sound = pygame.mixer.Sound("bomb_blast.wav")
+    gun_sound.set_volume(0.6)
+    bomb_sound.set_volume(0.8)
+except Exception as e:
+    print("⚠️ Sound files not found. Please place 'gun_fire.wav' and 'bomb_blast.wav' in the same directory.")
+
+# ✅ Background music
+try:
+    pygame.mixer.music.load("background.mp3")   # background track
+    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.play(-1)                 # loop forever
+    print("🎵 Background music started...")
+except Exception as e:
+    print("⚠️ Background music file not found. Place 'background.mp3' in the same directory.")
+
+# Optional: quick test for gun + bomb sounds
+print("🔊 Testing sounds...")
+if 'gun_sound' in globals():
+    gun_sound.play()
+    time.sleep(0.5)
+if 'bomb_sound' in globals():
+    bomb_sound.play()
+    time.sleep(0.5)
+
+# Optional: quick test at startup
+print("🔊 Testing sounds...")
+if 'gun_sound' in globals():
+    gun_sound.play()
+    time.sleep(0.5)
+if 'bomb_sound' in globals():
+    bomb_sound.play()
+    time.sleep(0.5)
 # Global variables
 score = 0
 bullets = []
@@ -28,6 +78,45 @@ GREEN = (0.0, 1.0, 0.0)
 BROWN = (0.6, 0.3, 0.1)
 GRAY = (0.5, 0.5, 0.5)
 CYAN = (0.0, 1.0, 1.0)
+
+
+# ===== NEW: Rain system =====
+rain_enabled = False
+raindrops = []
+
+class RainDrop:
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.x = random.uniform(-25, 25)   # within range
+        self.y = random.uniform(5, 15)     # start high in the sky
+        self.z = random.uniform(-40, 5)    # depth
+        self.speed = random.uniform(0.15, 0.3)
+
+    def update(self):
+        self.y -= self.speed
+        if self.y < -12:  # hit ground
+            self.reset()
+
+    def draw(self):
+        glColor3f(211/255.0, 227/255.0, 230/255.0)  # light blue
+        glBegin(GL_LINES)
+        glVertex3f(self.x, self.y, self.z)
+        glVertex3f(self.x, self.y + 0.3, self.z)  # short line segment
+        glEnd()
+
+
+def toggle_rain():
+    global rain_enabled, raindrops
+    rain_enabled = not rain_enabled
+    if rain_enabled:
+        raindrops = [RainDrop() for _ in range(200)]  # spawn 200 drops
+        print("🌧️ Rain started")
+    else:
+        raindrops.clear()
+        print("☀️ Rain stopped")
+# ====================================
 
 # ==== Helpers for new targets ====
 def draw_filled_triangle(side_len):
@@ -380,6 +469,10 @@ def shoot():
     # Create bullet from camera position
     bullet = Bullet(cam_x, cam_y, cam_z, direction_x, direction_y, direction_z)
     bullets.append(bullet)
+    # ✅ Play gunfire sound
+    if 'gun_sound' in globals():
+        gun_sound.play()
+
     print("Shot fired!")
 
 
@@ -491,6 +584,10 @@ def update_game():
     global bullets, targets, score, game_time
 
     game_time += 0.016  # Roughly 60 FPS
+    # Update rain
+    if rain_enabled:
+        for drop in raindrops:
+            drop.update()
 
     # Update bullets
     for bullet in bullets[:]:
@@ -502,7 +599,6 @@ def update_game():
     for target in targets[:]:
         target.update()
         if not target.active and not getattr(target, "exploding", False):
-            # Remove only if not in explosion phase
             targets.remove(target)
 
     # Check collisions and update score
@@ -514,18 +610,20 @@ def update_game():
                 if bullet in bullets:
                     bullets.remove(bullet)
 
-                # Apply scoring (bombs negative)
                 score += target.score_value
                 if isinstance(target, BombTarget):
                     target.on_hit()
-                    target.active = False  # stop being a hittable target
+                    target.active = False
+                    # ✅ Play bomb blast sound
+                    if 'bomb_sound' in globals():
+                        bomb_sound.play()
                     print(f"BOOM! -{abs(target.score_value)} points. Total score: {score}")
                 else:
                     target.active = False
                     print(f"SCORE UPDATE! +{target.score_value} points! Total score: {score}")
 
                 glutPostRedisplay()
-                break  # Only one target per bullet
+                break
 
     # Spawn new targets occasionally
     active_targets = len([t for t in targets if t.active])
@@ -558,6 +656,11 @@ def display():
 
     # Draw shooting range and targets
     draw_shooting_range()
+    # Draw rain
+    if rain_enabled:
+        for drop in raindrops:
+            drop.draw()
+
     for target in targets:
         target.draw()
 
@@ -609,6 +712,9 @@ def keyboard(key, x, y):
         glutDestroyWindow(glutGetWindow())
         sys.exit(0)
 
+    if key == b'r' or key == b'R':  # ✅ Toggle rain
+        toggle_rain()
+
     if game_over:
         if key == b' ':  # Space bar toggles play/pause (only when game_over True per your logic)
             if game_running:
@@ -640,6 +746,10 @@ def keyboard(key, x, y):
 def timer(value):
     if game_running and not game_paused:
         update_game()
+
+    # ✅ Keep pygame mixer alive inside GLUT loop
+    pygame.event.pump()
+
     glutPostRedisplay()
     glutTimerFunc(16, timer, 0)  # ~60 FPS
 
@@ -689,5 +799,5 @@ if __name__ == "__main__":
         print("OpenGL libraries not found!")
         print("Please install: pip install PyOpenGL PyOpenGL_accelerate")
         sys.exit(1)
- 
+
     main()
