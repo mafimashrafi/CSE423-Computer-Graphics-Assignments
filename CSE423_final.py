@@ -5,7 +5,57 @@ import math
 import random
 import sys
 import time
+import pygame   # ✅ NEW for sound
 
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
+import math
+import random
+import sys
+import time
+import pygame   # ✅ NEW for sound
+
+# Initialize pygame mixer
+# ✅ Initialize pygame for sound
+pygame.mixer.pre_init(44100, -16, 2, 512)
+pygame.init()
+pygame.mixer.init()
+
+try:
+    gun_sound = pygame.mixer.Sound("gun_fire.wav")
+    bomb_sound = pygame.mixer.Sound("bomb_blast.wav")
+    gun_sound.set_volume(0.6)
+    bomb_sound.set_volume(0.8)
+except Exception as e:
+    print("⚠️ Sound files not found. Please place 'gun_fire.wav' and 'bomb_blast.wav' in the same directory.")
+
+# ✅ Background music
+try:
+    pygame.mixer.music.load("background.mp3")   # background track
+    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.play(-1)                 # loop forever
+    print("🎵 Background music started...")
+except Exception as e:
+    print("⚠️ Background music file not found. Place 'background.mp3' in the same directory.")
+
+# Optional: quick test for gun + bomb sounds
+print("🔊 Testing sounds...")
+if 'gun_sound' in globals():
+    gun_sound.play()
+    time.sleep(0.5)
+if 'bomb_sound' in globals():
+    bomb_sound.play()
+    time.sleep(0.5)
+
+# Optional: quick test at startup
+print("🔊 Testing sounds...")
+if 'gun_sound' in globals():
+    gun_sound.play()
+    time.sleep(0.5)
+if 'bomb_sound' in globals():
+    bomb_sound.play()
+    time.sleep(0.5)
 # Global variables
 score = 0
 bullets = []
@@ -380,6 +430,10 @@ def shoot():
     # Create bullet from camera position
     bullet = Bullet(cam_x, cam_y, cam_z, direction_x, direction_y, direction_z)
     bullets.append(bullet)
+    # ✅ Play gunfire sound
+    if 'gun_sound' in globals():
+        gun_sound.play()
+
     print("Shot fired!")
 
 
@@ -502,7 +556,6 @@ def update_game():
     for target in targets[:]:
         target.update()
         if not target.active and not getattr(target, "exploding", False):
-            # Remove only if not in explosion phase
             targets.remove(target)
 
     # Check collisions and update score
@@ -514,18 +567,20 @@ def update_game():
                 if bullet in bullets:
                     bullets.remove(bullet)
 
-                # Apply scoring (bombs negative)
                 score += target.score_value
                 if isinstance(target, BombTarget):
                     target.on_hit()
-                    target.active = False  # stop being a hittable target
+                    target.active = False
+                    # ✅ Play bomb blast sound
+                    if 'bomb_sound' in globals():
+                        bomb_sound.play()
                     print(f"BOOM! -{abs(target.score_value)} points. Total score: {score}")
                 else:
                     target.active = False
                     print(f"SCORE UPDATE! +{target.score_value} points! Total score: {score}")
 
                 glutPostRedisplay()
-                break  # Only one target per bullet
+                break
 
     # Spawn new targets occasionally
     active_targets = len([t for t in targets if t.active])
@@ -640,6 +695,10 @@ def keyboard(key, x, y):
 def timer(value):
     if game_running and not game_paused:
         update_game()
+
+    # ✅ Keep pygame mixer alive inside GLUT loop
+    pygame.event.pump()
+
     glutPostRedisplay()
     glutTimerFunc(16, timer, 0)  # ~60 FPS
 
