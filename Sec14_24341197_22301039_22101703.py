@@ -523,8 +523,8 @@ def draw_hud():
     glPushMatrix()
     glTranslatef(0, 13.5, -39)  # Center top of back wall
     draw_text_3d(f"Score: {score}", 0, 0)
-    # if game_paused:
-    #     draw_text_3d("PAUSED", 0, -5)
+    if game_paused:
+        draw_text_3d("PAUSED", 0, -5)
     if not game_over:
         glColor3f(*RED)
         glTranslatef(-7, 12, -39)
