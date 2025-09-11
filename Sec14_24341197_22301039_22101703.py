@@ -229,7 +229,7 @@ class OlympicTarget:
                 miss_hit += 1
                 print("Target disappeared! No points.")
                 if miss_target >= 3 or miss_hit >= 5:
-                    game_over = True
+                    game_over = False
                     game_running = False
                     if score > max_score:
                         max_score = score
@@ -515,7 +515,7 @@ def draw_text_3d(text, x, y):
 
 
 def draw_hud():
-    global game_paused, game_running, max_score
+    global game_paused, game_running, max_score, gmae_over
     glDisable(GL_DEPTH_TEST)
 
     # --- Score on the back wall (top center) ---
@@ -523,8 +523,8 @@ def draw_hud():
     glPushMatrix()
     glTranslatef(0, 13.5, -39)  # Center top of back wall
     draw_text_3d(f"Score: {score}", 0, 0)
-    if game_paused:
-        draw_text_3d("PAUSED", 0, -5)
+    # if game_paused:
+    #     draw_text_3d("PAUSED", 0, -5)
     if not game_over:
         glColor3f(*RED)
         glTranslatef(-7, 12, -39)
